@@ -1,0 +1,104 @@
+/* ============================================================
+   ONYX — Webfonts (vendored)
+   Gordita: the sole ONYX typeface. Paths are relative to the
+   public/fonts/gordita/ directory served by Laravel.
+   ============================================================ */
+
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-Thin.otf") format("opentype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-ThinItalic.otf") format("opentype");
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-LightItalic.otf") format("opentype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-RegularItalic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-MediumItalic.otf") format("opentype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-BoldItalic.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-Black.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-BlackItalic.otf") format("opentype");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-Ultra.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Gordita";
+  src: url("/fonts/gordita/Gordita-UltraItalic.otf") format("opentype");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}

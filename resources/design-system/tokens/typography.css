@@ -1,0 +1,77 @@
+/* ============================================================
+   ONYX — Typography
+   One typeface, Gordita, across the whole system. Display sits
+   light and quiet at large sizes with tight tracking; labels
+   run uppercase with wide tracking; body is regular and warm.
+   ============================================================ */
+
+:root {
+  /* ---- Families ---- */
+  --font-sans: "Gordita", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Gordita", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  /* ---- Weights ---- */
+  --weight-thin: 100;
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-black: 800;
+  --weight-ultra: 900;
+
+  /* ---- Raw type scale (px) ---- */
+  --fs-12: 0.75rem;
+  --fs-13: 0.8125rem;
+  --fs-14: 0.875rem;
+  --fs-16: 1rem;
+  --fs-18: 1.125rem;
+  --fs-20: 1.25rem;
+  --fs-24: 1.5rem;
+  --fs-30: 1.875rem;
+  --fs-36: 2.25rem;
+  --fs-48: 3rem;
+  --fs-60: 3.75rem;
+  --fs-72: 4.5rem;
+  --fs-96: 6rem;
+  --fs-128: 8rem;
+
+  /* ---- Line heights ---- */
+  --leading-none: 1;
+  --leading-tight: 1.08;
+  --leading-snug: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ---- Tracking ---- */
+  --tracking-tighter: -0.03em;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.08em;
+  --tracking-wider: 0.16em;
+  --tracking-widest: 0.24em;
+
+  /* ============================================================
+     Role tokens — shorthand bundles
+     ============================================================ */
+
+  /* Display — light weight, tight tracking, large. The ONYX voice. */
+  --type-display-xl: var(--weight-light) var(--fs-96) / var(--leading-none) var(--font-display);
+  --type-display-lg: var(--weight-light) var(--fs-72) / var(--leading-tight) var(--font-display);
+  --type-display-md: var(--weight-light) var(--fs-48) / var(--leading-tight) var(--font-display);
+
+  /* Headings */
+  --type-heading-xl: var(--weight-regular) var(--fs-36) / var(--leading-snug) var(--font-sans);
+  --type-heading-lg: var(--weight-regular) var(--fs-30) / var(--leading-snug) var(--font-sans);
+  --type-heading-md: var(--weight-medium) var(--fs-24) / var(--leading-snug) var(--font-sans);
+  --type-heading-sm: var(--weight-medium) var(--fs-20) / var(--leading-snug) var(--font-sans);
+
+  /* Body */
+  --type-body-lg: var(--weight-regular) var(--fs-20) / var(--leading-relaxed) var(--font-sans);
+  --type-body-md: var(--weight-regular) var(--fs-16) / var(--leading-normal) var(--font-sans);
+  --type-body-sm: var(--weight-regular) var(--fs-14) / var(--leading-normal) var(--font-sans);
+
+  /* Label / eyebrow — uppercase, wide tracking */
+  --type-label: var(--weight-medium) var(--fs-13) / var(--leading-normal) var(--font-sans);
+  --type-caption: var(--weight-regular) var(--fs-12) / var(--leading-normal) var(--font-sans);
+}

@@ -1,0 +1,44 @@
+/* ============================================================
+   ONYX AIP — application stylesheet
+   Load order: ONYX tokens → Tailwind → app overrides
+   ============================================================ */
+
+/* 1. ONYX: fonts (@font-face), colour tokens, type scale, spacing, effects */
+@import "../design-system/tokens/fonts.css";
+@import "../design-system/tokens/colors.css";
+@import "../design-system/tokens/typography.css";
+@import "../design-system/tokens/spacing.css";
+@import "../design-system/tokens/effects.css";
+
+/* 2. Tailwind — utilities + preflight reset */
+@import 'tailwindcss';
+
+/* Scan Blade views, Livewire, and storage cache */
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/livewire/src/**/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* 3. Tailwind theme: wire our ONYX Gordita in as the default sans font */
+@theme {
+    --font-sans: 'Gordita', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-display: 'Gordita', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-mono: 'SFMono-Regular', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* 4. Base: establish ONYX body defaults after Tailwind preflight */
+@import "../design-system/tokens/base.css";
+
+/* 5. App utilities */
+[x-cloak] { display: none !important; }
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border-width: 0;
+}

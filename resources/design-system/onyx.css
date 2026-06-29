@@ -1,0 +1,18 @@
+/* ============================================================
+   ONYX Design System — vendored entry point for AIP.
+   Link this single file from your layout. It imports all
+   tokens in the correct order and establishes base defaults.
+
+   Usage in Blade layout:
+     <link rel="stylesheet" href="{{ asset('css/onyx.css') }}">
+
+   After the Laravel build pipeline (vite/mix), this file is
+   compiled from resources/design-system/ into public/css/.
+   ============================================================ */
+
+@import url("tokens/fonts.css");
+@import url("tokens/colors.css");
+@import url("tokens/typography.css");
+@import url("tokens/spacing.css");
+@import url("tokens/effects.css");
+@import url("tokens/base.css");

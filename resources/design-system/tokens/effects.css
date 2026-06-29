@@ -1,0 +1,43 @@
+/* ============================================================
+   ONYX — Radius, Elevation & Motion
+   Corners are kept close to square — refined, architectural.
+   Shadows are soft and warm-tinted, never heavy. Motion is
+   slow and assured: long ease-outs, fades, no bounce.
+   ============================================================ */
+
+:root {
+  /* ---- Radius ---- */
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ---- Elevation (warm onyx-tinted, low and soft) ---- */
+  --shadow-xs: 0 1px 2px rgba(20, 18, 16, 0.06);
+  --shadow-sm: 0 2px 6px rgba(20, 18, 16, 0.07);
+  --shadow-md: 0 8px 24px rgba(20, 18, 16, 0.09);
+  --shadow-lg: 0 18px 48px rgba(20, 18, 16, 0.12);
+  --shadow-xl: 0 32px 80px rgba(20, 18, 16, 0.16);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --shadow-hairline: 0 0 0 1px var(--border-subtle);
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 700ms;
+
+  --transition-base: all var(--duration-base) var(--ease-standard);
+  --transition-color: color var(--duration-fast) var(--ease-standard),
+                      background-color var(--duration-fast) var(--ease-standard),
+                      border-color var(--duration-fast) var(--ease-standard);
+}

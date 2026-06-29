@@ -1,0 +1,102 @@
+/* ============================================================
+   ONYX — Colour
+   Like the stone: deep onyx blacks, warm stone greys, and an
+   alabaster bone light. A single earthen accent — bronze,
+   "forged from the earth" — used with restraint.
+   ============================================================ */
+
+:root {
+  /* ---- Onyx scale (warm-black through bone) ---- */
+  --onyx-1000: #060606;
+  --onyx-950:  #0d0d0d;
+  --onyx-900:  #141414; /* primary ink */
+  --onyx-850:  #1b1917;
+  --onyx-800:  #242120;
+  --onyx-700:  #322e2b;
+  --onyx-600:  #47423c;
+  --onyx-500:  #6a635a; /* mid stone */
+  --onyx-400:  #938b80;
+  --onyx-300:  #b7afa3;
+  --onyx-200:  #d6cfc4;
+  --onyx-150:  #e2dbd0;
+  --onyx-100:  #ebe6dc;
+  --onyx-50:   #f4f1ec; /* alabaster / bone */
+  --onyx-25:   #faf8f3;
+  --white:     #ffffff;
+
+  /* ---- Bronze accent (earthen, used sparingly) ---- */
+  --bronze-700: #5f4a2e;
+  --bronze-600: #79613f;
+  --bronze-500: #997a4f; /* core accent */
+  --bronze-400: #b3955f;
+  --bronze-300: #c8af7e;
+  --bronze-100: #ece1cb;
+
+  /* ---- Vein (cool grey-white seam, for subtle detailing) ---- */
+  --vein: #cdc7bd;
+
+  /* ---- Status (muted to sit inside the palette) ---- */
+  --positive: #5c6f54;
+  --positive-soft: #e7ebe0;
+  --caution: #9a7b3f;
+  --caution-soft: #f0e7d2;
+  --critical: #8c4a3f;
+  --critical-soft: #efdcd6;
+  --info: #4a5d6e;
+  --info-soft: #dde6ec;
+
+  /* ============================================================
+     Semantic aliases — LIGHT (default). Bone surfaces, onyx ink.
+     ============================================================ */
+  --surface-page:     var(--onyx-50);
+  --surface-card:     var(--onyx-25);
+  --surface-raised:   var(--white);
+  --surface-sunken:   var(--onyx-100);
+  --surface-inverse:  var(--onyx-900);
+  --surface-accent:   var(--bronze-500);
+
+  --text-primary:   var(--onyx-900);
+  --text-secondary: var(--onyx-600);
+  --text-muted:     var(--onyx-500);
+  --text-faint:     var(--onyx-400);
+  --text-inverse:   var(--onyx-50);
+  --text-accent:    var(--bronze-600);
+  --text-on-accent: var(--onyx-25);
+
+  --border-subtle:  var(--onyx-150);
+  --border-default: var(--onyx-200);
+  --border-strong:  var(--onyx-400);
+  --border-inverse: var(--onyx-700);
+  --border-accent:  var(--bronze-500);
+
+  --focus-ring: var(--bronze-500);
+}
+
+/* ============================================================
+   Semantic aliases — ONYX (dark). The hero theme.
+   Apply with <body data-theme="onyx"> or [data-theme="onyx"].
+   ============================================================ */
+[data-theme="onyx"] {
+  --surface-page:     var(--onyx-950);
+  --surface-card:     var(--onyx-900);
+  --surface-raised:   var(--onyx-850);
+  --surface-sunken:   var(--onyx-1000);
+  --surface-inverse:  var(--onyx-50);
+  --surface-accent:   var(--bronze-500);
+
+  --text-primary:   var(--onyx-50);
+  --text-secondary: var(--onyx-300);
+  --text-muted:     var(--onyx-400);
+  --text-faint:     var(--onyx-500);
+  --text-inverse:   var(--onyx-900);
+  --text-accent:    var(--bronze-300);
+  --text-on-accent: var(--onyx-950);
+
+  --border-subtle:  var(--onyx-800);
+  --border-default: var(--onyx-700);
+  --border-strong:  var(--onyx-500);
+  --border-inverse: var(--onyx-200);
+  --border-accent:  var(--bronze-500);
+
+  --focus-ring: var(--bronze-400);
+}
