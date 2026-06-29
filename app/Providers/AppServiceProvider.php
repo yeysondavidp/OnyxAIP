@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,8 +23,8 @@ class AppServiceProvider extends ServiceProvider
         // In local/testing: surface N+1 queries and discarded fillable attributes
         // immediately rather than silently failing in production.
         if ($this->app->isLocal() || $this->app->runningUnitTests()) {
-            \Illuminate\Database\Eloquent\Model::preventLazyLoading();
-            \Illuminate\Database\Eloquent\Model::preventSilentlyDiscardingAttributes();
+            Model::preventLazyLoading();
+            Model::preventSilentlyDiscardingAttributes();
         }
     }
 }

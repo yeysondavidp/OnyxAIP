@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class Smoke extends Component
@@ -13,7 +14,7 @@ class Smoke extends Component
         $this->count++;
     }
 
-    public function render(): \Illuminate\View\View
+    public function render(): View
     {
         return view('livewire.smoke');
     }

@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Client;
 use App\Models\Store;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -18,6 +20,7 @@ class ClientScopeTest extends TestCase
     use RefreshDatabase;
 
     private Client $clientA;
+
     private Client $clientB;
 
     protected function setUp(): void
@@ -84,10 +87,10 @@ class ClientScopeTest extends TestCase
 
     public function test_db_enforces_client_id_not_null(): void
     {
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         // Bypass Eloquent and try to insert without client_id at the DB level.
-        \Illuminate\Support\Facades\DB::table('stores')->insert([
+        DB::table('stores')->insert([
             'name'       => 'No client',
             'store_code' => 'NO-001',
             'is_active'  => 1,

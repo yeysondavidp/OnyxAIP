@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Client extends BaseModel
 {
+    use Auditable;
+
     protected $fillable = [
         'name',
         'client_code',

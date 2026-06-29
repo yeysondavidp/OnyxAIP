@@ -1,0 +1,12 @@
+includes:
+    - vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+    # Level and paths are specified in composer scripts and CI — not here —
+    # so this file can be auto-detected without conflicting with CLI args.
+    # Level 5: catches type errors, undefined methods, and missing return types.
+    # Raise to 6+ as the codebase matures and stubs improve.
+    level: 5
+
+    paths:
+        - app

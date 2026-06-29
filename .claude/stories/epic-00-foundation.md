@@ -169,7 +169,7 @@ and writes set `client_id` from context; DB constraints present.
 **I want** a single append-only, async audit log capturing every significant action
 **So that** an audit finds a complete, tamper-resistant history (SRA §14.5).
 
-**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1, US-00.4 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1, US-00.4 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** a significant action, **when** it occurs, **then** an audit entry is written
@@ -202,7 +202,7 @@ documented list of "significant actions" mapped to §14.5.
 **So that** the Engineering Bar's "Clean" + tested requirements are enforced every change, not
 by memory.
 
-**Estimate:** 3 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** 📋 Ready
+**Estimate:** 3 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** the repo, **when** `./vendor/bin/pint` runs, **then** style is enforced (the project's

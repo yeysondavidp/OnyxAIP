@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use App\Traits\ClientScoped;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Store extends BaseModel
 {
-    use ClientScoped;
+    use Auditable, ClientScoped;
 
     protected $fillable = [
         'client_id',

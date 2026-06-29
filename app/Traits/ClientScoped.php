@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Scopes\ClientScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -34,10 +35,10 @@ trait ClientScoped
 {
     protected static function bootClientScoped(): void
     {
-        static::addGlobalScope(new ClientScope());
+        static::addGlobalScope(new ClientScope);
 
         static::creating(function (Model $model) {
-            if (isset($model->client_id)) {
+            if ($model->getAttribute('client_id') !== null) {
                 return; // explicitly set (e.g. seeder / admin action)
             }
 
@@ -51,7 +52,7 @@ trait ClientScoped
 
             // For a restricted user (future client_user), auto-set to their client.
             if ($permitted !== null && count($permitted) === 1) {
-                $model->client_id = $permitted[0];
+                $model->setAttribute('client_id', $permitted[0]);
             }
         });
     }
@@ -62,7 +63,7 @@ trait ClientScoped
      * Use sparingly (e.g. migration helpers, super-admin tools).
      * Never call this from a controller handling a client_user request.
      */
-    public static function allClients(): \Illuminate\Database\Eloquent\Builder
+    public static function allClients(): Builder
     {
         return static::withoutGlobalScope(ClientScope::class);
     }

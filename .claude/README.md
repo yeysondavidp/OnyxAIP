@@ -64,3 +64,30 @@ Epics are `EPIC-<nn>`. ADRs are `ADR-<nnn>`.
 - **Redis:** new project-owned, shareable container with `noeviction` — queue is safe; no open risk.
 - **Asset import:** **v1 is manual entry only**; CSV import deferred post-v1 (US-04.7) — SRA §16 Q3.
 - **Campaign scope:** a parent job/campaign is **single-client** (US-08.5) — SRA §16 Q5.
+
+---
+
+## Quality gates & testing conventions (US-00.6)
+
+Run locally with `composer ci` (runs lint → analyse → test in sequence).
+
+| Gate | Tool | Command | Config |
+|------|------|---------|--------|
+| Style | Laravel Pint | `composer lint` / `./vendor/bin/pint` | `pint.json` (preset: laravel) |
+| Static analysis | Larastan (PHPStan) | `composer analyse` / `./vendor/bin/phpstan analyse` | `phpstan.neon` (level 5, includes Larastan extension) |
+| Tests | Pest | `composer test` / `./vendor/bin/pest` | `phpunit.xml` |
+
+CI runs all three gates on every push/PR via `.github/workflows/ci.yml`. A failing gate blocks merge.
+
+### Testing conventions
+- **One integration test per command** (happy path, fast). Mark with `RefreshDatabase` only where
+  needed. Prefer pure unit tests for business logic that doesn't need the DB.
+- **Pest functional syntax** for new tests: `it('...', function () { ... })`. PHPUnit class-based
+  tests already in the suite are also valid — Pest runs both.
+- `QUEUE_CONNECTION=sync` in `phpunit.xml` so queued jobs (e.g. `WriteAuditLog`) run inline in
+  tests without needing a real worker. Never change this to `redis` in the test env.
+- `CACHE_STORE=array` and `SESSION_DRIVER=array` in tests — no Redis dependency.
+- **Larastan level 5.** Raise to 6+ as the project matures; update `phpstan.neon` and document
+  the reason here.
+- **No `@phpstan-ignore`, no baselines, no `T.must`-style suppressions.** Fix the underlying
+  type issue. Trait helpers accessed via `static::` must be `protected`, not `private`.
