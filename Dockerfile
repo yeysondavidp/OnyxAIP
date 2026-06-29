@@ -26,6 +26,7 @@ RUN apk add --no-cache \
         bash \
         git \
         unzip \
+        mysql-client \
         libpng-dev \
         libjpeg-turbo-dev \
         freetype-dev \

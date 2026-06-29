@@ -231,7 +231,7 @@ in `.claude` or `CONTRIBUTING`.
 **I want** scheduled backups and an alert before the photo volume fills
 **So that** a single-server v1 (ADR-002) doesn't lose data or silently run out of disk (§16 Q6).
 
-**Estimate:** 3 · **Priority:** P1 · **Depends on:** US-00.2 · **Status:** 📋 Ready
+**Estimate:** 3 · **Priority:** P1 · **Depends on:** US-00.2 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** the scheduler, **when** the backup job runs, **then** it produces a DB dump **and** an
