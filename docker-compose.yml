@@ -2,10 +2,28 @@
 # Topology: ADR-002. MySQL is a shared external container (DB_HOST in .env).
 # Redis is defined here — owned by this project, shared network for future adopters.
 #
-# Usage:
+# ── First-time setup ─────────────────────────────────────────────────────────
+# 1. Create the shared Docker network (once per host):
+#      docker network create shared_net
+#
+# 2. Provision the ONYX AIP database + user on the shared MySQL container:
+#      docker exec -i <mysql_container> mysql -uroot -p < docker/mysql/provision.sql
+#    Then set DB_HOST, DB_PASSWORD in .env.
+#
+# 3. Copy .env.example → .env and fill in APP_KEY, DB_PASSWORD, MAIL_* etc.
+#      cp .env.example .env && php artisan key:generate --show
+#      (paste the key into .env as APP_KEY)
+#
+# 4. Start the stack and run migrations:
+#      docker compose up -d
+#      docker compose exec app php artisan migrate --force
+#
+# ── Day-to-day ───────────────────────────────────────────────────────────────
 #   docker compose up -d          — start the stack
 #   docker compose exec app php artisan migrate
 #   docker compose logs -f queue  — tail queue worker
+#   docker compose exec app php artisan tinker
+# ─────────────────────────────────────────────────────────────────────────────
 
 services:
 
@@ -35,7 +53,10 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      REDIS_HOST: redis    # override: inside Docker the service name resolves
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
     volumes:
       - app_storage:/var/www/html/storage/app
     networks:
@@ -56,6 +77,7 @@ services:
     env_file: .env
     environment:
       REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
     volumes:
       - app_storage:/var/www/html/storage/app
     networks:
@@ -76,6 +98,7 @@ services:
     env_file: .env
     environment:
       REDIS_HOST: redis
+      QUEUE_CONNECTION: redis
     networks:
       - onyx_net
       - shared_net

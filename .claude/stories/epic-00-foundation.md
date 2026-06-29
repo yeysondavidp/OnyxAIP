@@ -17,7 +17,7 @@ Related: ADR-002 (deployment). Sprint: 0.
 **I want** a clean Laravel 11 / PHP 8.3 project with sane base configuration
 **So that** all feature work has a consistent, correctly-configured starting point.
 
-**Estimate:** 3 · **Priority:** P0 · **Depends on:** none · **Status:** 📋 Ready
+**Estimate:** 3 · **Priority:** P0 · **Depends on:** none · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** a fresh checkout, **when** dependencies are installed, **then** Laravel 11 boots with
@@ -52,7 +52,7 @@ page renders; README "getting started" section written.
 **I want** the app fully containerised per ADR-002
 **So that** it runs identically on a dev machine and the target small server.
 
-**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** the repo, **when** I run `docker compose up`, **then** nginx, app (php-fpm), db, queue
@@ -98,7 +98,7 @@ non-root verified; deployment steps documented.
 mobile shell
 **So that** every screen inherits clear hierarchy, accessible defaults and Australian-English UI.
 
-**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** a PM page, **when** rendered on desktop (1280px+), **then** it uses the PM shell
@@ -134,7 +134,7 @@ keyboard/focus and contrast checked; copy is en-AU.
 **I want** a reusable `client_id` scoping mechanism baked into the data layer
 **So that** **no query can leak across tenants by accident** (Engineering Bar #1; SRA §2.1, §17).
 
-**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** a tenant-scoped model, **when** it uses the scoping trait, **then** a **global scope**
