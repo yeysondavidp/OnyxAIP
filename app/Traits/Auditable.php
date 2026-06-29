@@ -93,8 +93,8 @@ trait Auditable
     ): void {
         $user   = auth()->user();
         $userId = $user?->getKey();
-        // role column added in US-01.2 — guard against it not existing yet
-        $userRole = ($user && isset($user->role)) ? (string) $user->role : null;
+        // role is a backed enum (UserRole::value) — use ->value for string serialisation
+        $userRole = ($user && isset($user->role)) ? $user->role->value : null;
 
         WriteAuditLog::dispatch(
             userId: is_int($userId) ? $userId : ($userId !== null ? (int) $userId : null),

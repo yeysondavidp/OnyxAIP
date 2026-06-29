@@ -7,6 +7,14 @@
         Sign in to ONYX Asset Intelligence Platform
     </p>
 
+    @if (session('status'))
+        <div style="margin-bottom: var(--space-5);">
+            <x-onyx.alert tone="success">
+                {{ session('status') }}
+            </x-onyx.alert>
+        </div>
+    @endif
+
     @if ($errors->isNotEmpty())
         <div style="margin-bottom: var(--space-5);">
             <x-onyx.alert tone="critical">
@@ -36,6 +44,11 @@
                 autocomplete="current-password"
                 :error="$errors->first('password')"
             />
+            <div style="margin-top: var(--space-2); text-align: right;">
+                <a href="{{ route('password.request') }}" style="font-size: var(--fs-13); color: var(--bronze-600); text-decoration: none;">
+                    Forgot password?
+                </a>
+            </div>
         </div>
 
         <div style="display: flex; align-items: center; gap: var(--space-3);">

@@ -14,6 +14,10 @@ use Tests\TestCase;
  * Proves that ClientScope blocks cross-tenant reads.
  * US-00.4 acceptance criteria: "rows of other clients are never returned —
  * proven by a failing-without-scope test."
+ *
+ * Updated in US-01.2: scope restriction is now tied to the client_user role.
+ * PMs are always unrestricted regardless of client_id. client_users are
+ * restricted to their own client_id.
  */
 class ClientScopeTest extends TestCase
 {
@@ -45,7 +49,8 @@ class ClientScopeTest extends TestCase
 
     public function test_user_scoped_to_client_a_cannot_see_client_b_stores(): void
     {
-        $user = User::factory()->create(['client_id' => $this->clientA->id]);
+        // client_user role + client_id → restricted to that client
+        $user = User::factory()->clientUser()->create(['client_id' => $this->clientA->id]);
         $this->actingAs($user);
 
         $stores = Store::all();
@@ -56,7 +61,7 @@ class ClientScopeTest extends TestCase
 
     public function test_user_scoped_to_client_b_cannot_see_client_a_stores(): void
     {
-        $user = User::factory()->create(['client_id' => $this->clientB->id]);
+        $user = User::factory()->clientUser()->create(['client_id' => $this->clientB->id]);
         $this->actingAs($user);
 
         $stores = Store::all();
@@ -67,8 +72,7 @@ class ClientScopeTest extends TestCase
 
     public function test_without_scope_all_stores_are_visible(): void
     {
-        // Proves the scope is what's doing the filtering — bypass it explicitly.
-        $user = User::factory()->create(['client_id' => $this->clientA->id]);
+        $user = User::factory()->clientUser()->create(['client_id' => $this->clientA->id]);
         $this->actingAs($user);
 
         $this->assertSame(3, Store::allClients()->count());
@@ -76,7 +80,7 @@ class ClientScopeTest extends TestCase
 
     public function test_client_id_set_from_context_on_create(): void
     {
-        $user = User::factory()->create(['client_id' => $this->clientA->id]);
+        $user = User::factory()->clientUser()->create(['client_id' => $this->clientA->id]);
         $this->actingAs($user);
 
         // Don't pass client_id — the trait must inject it from the auth context.
@@ -89,7 +93,6 @@ class ClientScopeTest extends TestCase
     {
         $this->expectException(QueryException::class);
 
-        // Bypass Eloquent and try to insert without client_id at the DB level.
         DB::table('stores')->insert([
             'name'       => 'No client',
             'store_code' => 'NO-001',

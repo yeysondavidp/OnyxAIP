@@ -16,7 +16,7 @@ Sprint: 1.
 **I want** to sign in securely with email/password and recover my password
 **So that** only authorised ONYX staff reach PM functionality.
 
-**Estimate:** 3 · **Priority:** P0 · **Depends on:** US-00.1, US-00.3 · **Status:** 📋 Ready
+**Estimate:** 3 · **Priority:** P0 · **Depends on:** US-00.1, US-00.3 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** valid credentials, **when** a PM logs in, **then** they reach the PM dashboard; logout
@@ -48,7 +48,7 @@ auth middleware guards PM routes; happy-path integration test.
 **I want** a clear role model (`pm`, `technician`, and a defined-but-dormant `client_user`)
 **So that** every action can be authorised against the actor's role (SRA §2.2; §16 Q1).
 
-**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-01.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-01.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** a user, **when** created, **then** they hold exactly one role from a typed enum:
@@ -80,7 +80,7 @@ present but inert; no magic-string role checks anywhere.
 **I want** Laravel policies on every model that combine **role + `client_id` scope**
 **So that** no actor can read or mutate another tenant's data or escalate (Engineering Bar #1).
 
-**Estimate:** 8 · **Priority:** P0 · **Depends on:** US-00.4, US-01.2 · **Status:** 📋 Ready
+**Estimate:** 8 · **Priority:** P0 · **Depends on:** US-00.4, US-01.2 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** any tenant-scoped model, **when** an action is attempted, **then** a policy authorises
@@ -117,7 +117,7 @@ Policy pattern documented as the reference for all later CRUD; cross-tenant deny
 **So that** I can work with minimal friction while ONYX keeps the door safe (SRA §2.2, §14.3;
 ADR-001).
 
-**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-01.2 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-01.2 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** a job invitation, **when** a signed URL is generated, **then** it is **expiring**,
@@ -155,7 +155,7 @@ EPIC-09/10 build on.
 **I want** the app-wide security middleware and rate limits configured once
 **So that** every route inherits the SRA §14.3 protections without per-feature reinvention.
 
-**Estimate:** 3 · **Priority:** P0 · **Depends on:** US-01.1 · **Status:** 📋 Ready
+**Estimate:** 3 · **Priority:** P0 · **Depends on:** US-01.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** any route, **when** registered, **then** it sits behind the correct middleware group

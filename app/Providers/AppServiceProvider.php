@@ -2,22 +2,16 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
+    public function register(): void {}
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         // In local/testing: surface N+1 queries and discarded fillable attributes
@@ -26,5 +20,51 @@ class AppServiceProvider extends ServiceProvider
             Model::preventLazyLoading();
             Model::preventSilentlyDiscardingAttributes();
         }
+
+        $this->configureRateLimiters();
+    }
+
+    /**
+     * Named rate limiters (§14.3, US-01.5).
+     *
+     * Defined once here, referenced by name in routes/web.php so there is
+     * no duplicated throttle config anywhere in the codebase.
+     *
+     * Thresholds:
+     *   login          5 attempts/min per email+IP  — brute-force protection
+     *   password.reset 3 attempts/min per IP        — reset-link flooding
+     *   guest.job      60 req/min per IP            — technician flow (~1/sec steady)
+     *   photo.upload   10 uploads/min per IP        — large-payload abuse
+     *   qr.lookup      30 req/min per IP            — QR redirect spam
+     */
+    private function configureRateLimiters(): void
+    {
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(5)
+                ->by(strtolower((string) $request->input('email')).'|'.$request->ip())
+                ->response(fn () => back()->withErrors([
+                    'email' => 'Too many sign-in attempts. Please try again in a minute.',
+                ]));
+        });
+
+        RateLimiter::for('password.reset', function (Request $request) {
+            return Limit::perMinute(3)
+                ->by($request->ip())
+                ->response(fn () => back()->withErrors([
+                    'email' => 'Too many requests. Please try again in a minute.',
+                ]));
+        });
+
+        RateLimiter::for('guest.job', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
+        });
+
+        RateLimiter::for('photo.upload', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
+        RateLimiter::for('qr.lookup', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
     }
 }
