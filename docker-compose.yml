@@ -1,0 +1,130 @@
+# ONYX AIP — Docker Compose (dev + prod parity)
+# Topology: ADR-002. MySQL is a shared external container (DB_HOST in .env).
+# Redis is defined here — owned by this project, shared network for future adopters.
+#
+# Usage:
+#   docker compose up -d          — start the stack
+#   docker compose exec app php artisan migrate
+#   docker compose logs -f queue  — tail queue worker
+
+services:
+
+  # ----------------------------------------------------------------
+  # nginx — reverse proxy + static file server
+  # ----------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - app_storage:/var/www/html/storage/app:ro   # read-only: serves nothing directly (see conf)
+    networks:
+      - onyx_net
+    depends_on:
+      - app
+
+  # ----------------------------------------------------------------
+  # app — Laravel php-fpm
+  # ----------------------------------------------------------------
+  app:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_HOST: redis    # override: inside Docker the service name resolves
+    volumes:
+      - app_storage:/var/www/html/storage/app
+    networks:
+      - onyx_net
+      - shared_net
+    depends_on:
+      - redis
+
+  # ----------------------------------------------------------------
+  # queue — async jobs: email dispatch, audit log writes (§14.5)
+  # ----------------------------------------------------------------
+  queue:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    command: php artisan queue:work --tries=3 --timeout=90 --sleep=3
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+    volumes:
+      - app_storage:/var/www/html/storage/app
+    networks:
+      - onyx_net
+      - shared_net
+    depends_on:
+      - redis
+
+  # ----------------------------------------------------------------
+  # scheduler — SLA clock, warranty reminders, backup job (§10, §12)
+  # ----------------------------------------------------------------
+  scheduler:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    command: php artisan schedule:work
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+    networks:
+      - onyx_net
+      - shared_net
+    depends_on:
+      - redis
+
+  # ----------------------------------------------------------------
+  # redis — queue + cache + sessions (AOF + noeviction, ADR-002)
+  # Sits on shared_net so other projects on this host can adopt it.
+  # ONYX AIP uses DB 0 (queue) and DB 1 (cache). Pick a free index
+  # and set a unique REDIS_PREFIX to namespace a new adopter.
+  # ----------------------------------------------------------------
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+    volumes:
+      - ./docker/redis/redis.conf:/etc/redis/redis.conf:ro
+      - redis_data:/data
+    networks:
+      - onyx_net
+      - shared_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+# ----------------------------------------------------------------
+# Volumes
+# ----------------------------------------------------------------
+volumes:
+  app_storage:
+    # Photos + generated PDFs/QR labels. Mount a host path in production:
+    # driver: local
+    # driver_opts: { type: none, o: bind, device: /data/onyx-aip/storage }
+  redis_data:
+    # AOF persistence — queued jobs survive a restart
+
+# ----------------------------------------------------------------
+# Networks
+# ----------------------------------------------------------------
+networks:
+  onyx_net:
+    # Internal network: nginx ↔ app ↔ queue ↔ scheduler ↔ redis
+    driver: bridge
+  shared_net:
+    # Shared host network: exposes Redis to other projects + lets
+    # app/queue/scheduler reach the shared MySQL container.
+    # Create once on the host: docker network create shared_net
+    external: true
+    name: ${SHARED_NETWORK:-shared_net}

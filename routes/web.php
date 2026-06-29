@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', fn () => redirect()->route('dashboard'));
 
+// Dev smoke test — verifies Livewire, Alpine, DB, and Tz helper
+Route::get('/smoke', fn () => view('smoke'))->name('smoke');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn () => view('auth.login'))->name('login');
     Route::post('/login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store'])->name('login.post');
