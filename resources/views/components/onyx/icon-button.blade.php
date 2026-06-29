@@ -51,7 +51,7 @@ $shapeClass   = $round ? 'onyx-icon-btn--round' : '';
 .onyx-icon-btn--round { border-radius: var(--radius-pill); }
 
 .onyx-icon-btn--sm { width: 34px; height: 34px; }
-.onyx-icon-btn--md { width: 42px; height: 42px; }
+.onyx-icon-btn--md { width: 44px; height: 44px; } /* WCAG 2.1 AA min touch target */
 .onyx-icon-btn--lg { width: 50px; height: 50px; }
 
 .onyx-icon-btn--ghost   { background: transparent; color: var(--text-primary); }

@@ -75,8 +75,9 @@ $tag        = $href ? 'a' : 'button';
 .onyx-btn--ghost   { background: transparent; color: var(--text-primary); }
 .onyx-btn--ghost:hover:not(:disabled) { background: var(--surface-sunken); }
 
-.onyx-btn--accent  { background: var(--bronze-500); color: var(--onyx-25); }
-.onyx-btn--accent:hover:not(:disabled) { background: var(--bronze-600); }
+/* bronze-600 (#79613f) on onyx-25 = 5.48:1 — passes WCAG AA */
+.onyx-btn--accent  { background: var(--bronze-600); color: var(--onyx-25); }
+.onyx-btn--accent:hover:not(:disabled) { background: var(--bronze-700); }
 </style>
 
 @if ($href)

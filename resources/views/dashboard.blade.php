@@ -23,7 +23,7 @@
 
         <x-onyx.card variant="default" padding="lg">
             <x-onyx.eyebrow tone="muted">Open Faults</x-onyx.eyebrow>
-            <p style="font-size: var(--fs-36); font-weight: var(--weight-bold); color: var(--critical-600); margin: var(--space-2) 0 var(--space-1);">
+            <p style="font-size: var(--fs-36); font-weight: var(--weight-bold); color: var(--critical); margin: var(--space-2) 0 var(--space-1);">
                 —
             </p>
             <p style="font-size: var(--fs-13); color: var(--text-secondary);">Assets requiring attention</p>
@@ -39,7 +39,7 @@
 
         <x-onyx.card variant="default" padding="lg">
             <x-onyx.eyebrow tone="muted">SLA Breaches</x-onyx.eyebrow>
-            <p style="font-size: var(--fs-36); font-weight: var(--weight-bold); color: var(--caution-600); margin: var(--space-2) 0 var(--space-1);">
+            <p style="font-size: var(--fs-36); font-weight: var(--weight-bold); color: var(--caution); margin: var(--space-2) 0 var(--space-1);">
                 —
             </p>
             <p style="font-size: var(--fs-13); color: var(--text-secondary);">Requiring escalation</p>
