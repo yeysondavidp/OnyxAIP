@@ -7,6 +7,7 @@
     </x-slot:breadcrumbs>
 
     <x-slot:headerActions>
+        <x-onyx.button href="{{ route('assets.label', $asset) }}" variant="outline" size="sm">Download label</x-onyx.button>
         <x-onyx.button href="{{ route('assets.edit', $asset) }}" variant="outline" size="sm">Edit</x-onyx.button>
     </x-slot:headerActions>
 
@@ -162,6 +163,23 @@
 
         {{-- Right sidebar --}}
         <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+
+            {{-- QR Code (US-07.1) --}}
+            <x-onyx.card variant="default" padding="md">
+                <h3 style="font-size: var(--fs-13); font-weight: var(--weight-semibold); color: var(--text-secondary); text-transform: uppercase; letter-spacing: var(--tracking-wide); margin-bottom: var(--space-3);">QR Code</h3>
+                @if ($asset->qr_code_path)
+                    @php $qrUri = app(\App\Services\QrCodeService::class)->getDataUri($asset); @endphp
+                    <div style="text-align: center;">
+                        <img src="{{ $qrUri }}" alt="QR code for {{ $asset->asset_code }}" style="width: 160px; height: 160px; display: block; margin: 0 auto;">
+                        <p style="font-family: monospace; font-size: var(--fs-12); color: var(--text-secondary); margin-top: var(--space-2);">{{ $asset->asset_code }}</p>
+                        <div style="margin-top: var(--space-3);">
+                            <x-onyx.button href="{{ route('assets.label', $asset) }}" variant="outline" size="xs" style="width: 100%;">Download label</x-onyx.button>
+                        </div>
+                    </div>
+                @else
+                    <p style="font-size: var(--fs-13); color: var(--text-muted);">QR code not yet generated.</p>
+                @endif
+            </x-onyx.card>
 
             <x-onyx.card variant="default" padding="md">
                 <h3 style="font-size: var(--fs-13); font-weight: var(--weight-semibold); color: var(--text-secondary); text-transform: uppercase; letter-spacing: var(--tracking-wide); margin-bottom: var(--space-3);">Location</h3>

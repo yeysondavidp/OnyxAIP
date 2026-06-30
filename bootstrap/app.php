@@ -5,6 +5,7 @@ use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Exceptions\InvalidSignatureException;
 
@@ -37,5 +38,13 @@ return Application::configure(basePath: dirname(__DIR__))
             $view      = $isExpired ? 'technician.link-expired' : 'technician.link-invalid';
 
             return response()->view($view, [], 403);
+        });
+
+        // Mobile-first 429 page for the QR lookup route (US-07.3, §14.3).
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->is('qr/*')) {
+                return response()->view('qr.too-many-requests', [], 429)
+                    ->header('Retry-After', $e->getHeaders()['Retry-After'] ?? '60');
+            }
         });
     })->create();

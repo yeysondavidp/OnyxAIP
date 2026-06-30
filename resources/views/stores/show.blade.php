@@ -114,6 +114,36 @@
                 </div>
             </x-onyx.card>
 
+            {{-- Display Groups (US-05.2) --}}
+            <x-onyx.card variant="default" padding="none">
+                <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
+                    <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary);">Display Groups</h2>
+                    @can('create', [App\Models\DisplayGroup::class, $store])
+                        <x-onyx.button href="{{ route('stores.display-groups.create', $store) }}" variant="outline" size="sm">Add group</x-onyx.button>
+                    @endcan
+                </div>
+                <div style="padding: var(--space-5);">
+                    @if ($displayGroups->isEmpty())
+                        <x-onyx.empty icon="layout" heading="No display groups configured" body="Add a display group to map players to screens." size="sm">
+                            @can('create', [App\Models\DisplayGroup::class, $store])
+                                <x-onyx.button href="{{ route('stores.display-groups.create', $store) }}" variant="outline" size="sm">Add display group</x-onyx.button>
+                            @endcan
+                        </x-onyx.empty>
+                    @else
+                        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                            @foreach ($displayGroups as $group)
+                                @include('display-groups._topology-card', ['group' => $group, 'showActions' => false])
+                            @endforeach
+                        </div>
+                        <div style="margin-top: var(--space-4);">
+                            <a href="{{ route('stores.display-groups.index', $store) }}" style="font-size: var(--fs-13); color: var(--bronze-600); text-decoration: none;">
+                                View all display groups →
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </x-onyx.card>
+
         </div>
 
         {{-- Right sidebar --}}

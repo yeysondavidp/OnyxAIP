@@ -8,6 +8,7 @@ use App\Http\Requests\CreateStoreRequest;
 use App\Http\Requests\UpdateStoreRequest;
 use App\Models\Asset;
 use App\Models\Client;
+use App\Models\DisplayGroup;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -55,11 +56,16 @@ class StoreController extends Controller
             ->orderBy('asset_name')
             ->limit(10)
             ->get();
+        $displayGroups = DisplayGroup::with(['player', 'screens'])
+            ->where('store_id', $store->id)
+            ->orderBy('group_name')
+            ->get();
 
         return view('stores.show', [
-            'store'      => $store->load('client'),
-            'assets'     => $assets,
-            'assetCount' => $assetCount,
+            'store'         => $store->load('client'),
+            'assets'        => $assets,
+            'assetCount'    => $assetCount,
+            'displayGroups' => $displayGroups,
         ]);
     }
 

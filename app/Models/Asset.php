@@ -4,11 +4,13 @@ namespace App\Models;
 
 use App\Enums\AssetStatus;
 use App\Enums\AssetType;
+use App\Services\QrCodeService;
 use App\Traits\Auditable;
 use App\Traits\ClientScoped;
 use Database\Factories\AssetFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +40,7 @@ class Asset extends BaseModel
         'location_notes',
         'parent_asset_id',
         'notes',
+        'qr_code_path',
     ];
 
     protected function casts(): array
@@ -91,6 +94,27 @@ class Asset extends BaseModel
     public function windowFixtureDetail(): HasOne
     {
         return $this->hasOne(AssetWindowFixtureDetail::class);
+    }
+
+    public function history(): HasMany
+    {
+        return $this->hasMany(AssetHistory::class)->orderByDesc('transitioned_at');
+    }
+
+    // ── QR code ────────────────────────────────────────────────────────────────
+
+    protected static function booted(): void
+    {
+        // Generate QR code after the asset record is first persisted (US-07.1).
+        // Runs outside the main createWithDetail() transaction — failure is non-fatal;
+        // the QR can be regenerated on demand via QrCodeService::generateForAsset().
+        static::created(function (self $asset) {
+            try {
+                app(QrCodeService::class)->generateForAsset($asset);
+            } catch (\Throwable) {
+                // Non-fatal — asset is usable without the QR image.
+            }
+        });
     }
 
     // ── Detail helpers ─────────────────────────────────────────────────────────

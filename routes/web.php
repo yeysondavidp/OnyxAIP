@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\AssetQrController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\DisplayGroupController;
+use App\Http\Controllers\LabelSheetController;
 use App\Http\Controllers\ServiceJobController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Technician\JobFlowController;
@@ -77,6 +80,17 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::resource('jobs', ServiceJobController::class);
     Route::resource('technicians', TechnicianController::class);
 
+    // Display Groups — nested under stores
+    Route::resource('stores.display-groups', DisplayGroupController::class)
+        ->except(['show'])
+        ->parameters(['display-groups' => 'display_group']);
+
+    // PDF label sheet for one or more assets
+    Route::get('/assets/{asset}/label', [LabelSheetController::class, 'single'])
+        ->name('assets.label');
+    Route::post('/assets/labels', [LabelSheetController::class, 'batch'])
+        ->name('assets.labels.batch');
+
     Route::get('/reports', fn () => view('reports.index'))->name('reports.index');
 });
 
@@ -89,6 +103,17 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
 |   throttle:guest.job — named limiter from bootstrap/app.php
 |--------------------------------------------------------------------------
 */
+/*
+|--------------------------------------------------------------------------
+| QR asset lookup — public, unauthenticated, rate-limited (US-07.1, US-07.3)
+| Threshold: 30 req/min per IP (documented in AppServiceProvider::configureRateLimiters)
+|--------------------------------------------------------------------------
+*/
+Route::get('/qr/{assetCode}', [AssetQrController::class, 'lookup'])
+    ->middleware('throttle:qr.lookup')
+    ->name('assets.qr.lookup')
+    ->where('assetCode', '[A-Za-z0-9\-_]{1,40}');
+
 Route::middleware(['signed', 'throttle:guest.job'])->group(function () {
     Route::get('/job/{job}/start', [JobFlowController::class, 'overview'])
         ->name('technician.job.overview');
