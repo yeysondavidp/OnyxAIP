@@ -61,6 +61,9 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
+// Link-expired page — publicly accessible for expired/invalid technician links (US-09.4)
+Route::get('/link-expired', fn () => view('technician.link-expired'))->name('technician.link-expired');
+
 /*
 |--------------------------------------------------------------------------
 | PM portal routes
@@ -90,6 +93,12 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::get('/jobs/{job}/attachments/{attachment}/download', [ServiceJobController::class, 'downloadAttachment'])->name('jobs.attachments.download');
     Route::delete('/jobs/{job}/attachments/{attachment}', [ServiceJobController::class, 'destroyAttachment'])->name('jobs.attachments.destroy');
     Route::resource('technicians', TechnicianController::class);
+
+    // Invitation send (US-09.2) — rate-limited
+    Route::get('/jobs/{job}/invite', [TechnicianController::class, 'inviteForm'])->name('jobs.invite-form');
+    Route::post('/jobs/{job}/invite/send', [TechnicianController::class, 'sendInvitations'])
+        ->middleware('throttle:invitation.send')
+        ->name('jobs.invite.send');
 
     // Display Groups — nested under stores
     Route::resource('stores.display-groups', DisplayGroupController::class)
@@ -126,6 +135,16 @@ Route::get('/qr/{assetCode}', [AssetQrController::class, 'lookup'])
     ->where('assetCode', '[A-Za-z0-9\-_]{1,40}');
 
 Route::middleware(['signed', 'throttle:guest.job'])->group(function () {
+    // Accept/Decline invitation response (US-09.3)
+    Route::get('/job/{job}/respond', [TechnicianController::class, 'inviteResponse'])
+        ->name('technician.job.respond');
+
+    Route::post('/job/{job}/accept', [TechnicianController::class, 'acceptInvite'])
+        ->name('technician.job.accept');
+
+    Route::post('/job/{job}/decline', [TechnicianController::class, 'declineInvite'])
+        ->name('technician.job.decline');
+
     Route::get('/job/{job}/start', [JobFlowController::class, 'overview'])
         ->name('technician.job.overview');
 

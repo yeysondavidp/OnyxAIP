@@ -7,7 +7,7 @@ use App\Enums\JobType;
 use App\Models\Asset;
 use App\Models\ServiceJob;
 use App\Models\Store;
-use App\Models\User;
+use App\Models\TechnicianProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -36,9 +36,9 @@ class StoreServiceJobRequest extends FormRequest
             // Affected assets — all must belong to the chosen store (validated in withValidator)
             'asset_ids'   => ['nullable', 'array'],
             'asset_ids.*' => ['integer', Rule::exists('assets', 'id')],
-            // Assigned technicians
-            'technician_ids'   => ['nullable', 'array'],
-            'technician_ids.*' => ['integer', Rule::exists('users', 'id')],
+            // Assigned technician profiles (US-09.1)
+            'technician_profile_ids'   => ['nullable', 'array'],
+            'technician_profile_ids.*' => ['integer', Rule::exists('technician_profiles', 'id')],
         ];
     }
 
@@ -47,7 +47,7 @@ class StoreServiceJobRequest extends FormRequest
         $validator->after(function (Validator $v) {
             $this->validateStoreClientScope($v);
             $this->validateAssetsInStore($v);
-            $this->validateTechniciansRole($v);
+            $this->validateTechniciansRole($v); // validates technician_profile_ids
             $this->validateParentHierarchy($v);
         });
     }
@@ -96,21 +96,21 @@ class StoreServiceJobRequest extends FormRequest
     }
 
     /**
-     * Ensure assigned users hold the technician role (US-08.4).
+     * Ensure assigned technician profile IDs exist and are active (US-09.1).
      */
     private function validateTechniciansRole(Validator $v): void
     {
-        $techIds = $this->input('technician_ids', []);
-        if (empty($techIds)) {
+        $profileIds = $this->input('technician_profile_ids', []);
+        if (empty($profileIds)) {
             return;
         }
 
-        $validCount = User::whereIn('id', $techIds)
-            ->where('role', 'technician')
+        $validCount = TechnicianProfile::whereIn('id', $profileIds)
+            ->where('is_active', true)
             ->count();
 
-        if ($validCount !== count($techIds)) {
-            $v->errors()->add('technician_ids', 'One or more assigned users are not technicians.');
+        if ($validCount !== count($profileIds)) {
+            $v->errors()->add('technician_profile_ids', 'One or more selected technicians are not active or do not exist.');
         }
     }
 

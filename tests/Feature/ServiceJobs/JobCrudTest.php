@@ -9,6 +9,7 @@ use App\Models\Asset;
 use App\Models\Client;
 use App\Models\ServiceJob;
 use App\Models\Store;
+use App\Models\TechnicianProfile;
 use App\Models\User;
 use App\Services\JobTransitionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -204,48 +205,48 @@ it('cancelled job is soft-deleted and hidden from active queries', function () {
 
 // ── Multi-technician assignment (US-08.4) ─────────────────────────────────────
 
-it('assigns technicians via pivot with invited status', function () {
-    $pm    = User::factory()->pm()->create();
-    $tech  = User::factory()->technician()->create();
-    $store = Store::factory()->create();
+it('assigns technician profiles via pivot with invited status', function () {
+    $pm      = User::factory()->pm()->create();
+    $profile = TechnicianProfile::factory()->create();
+    $store   = Store::factory()->create();
 
     $this->actingAs($pm)
         ->post(route('jobs.store'), [
-            'store_id'           => $store->id,
-            'job_reference'      => 'JOB-005',
-            'job_name'           => 'Multi-tech job',
-            'job_description'    => 'Desc.',
-            'job_type'           => JobType::Survey->value,
-            'early_start_window' => EarlyStartWindow::Anytime->value,
-            'technician_ids'     => [$tech->id],
+            'store_id'               => $store->id,
+            'job_reference'          => 'JOB-005',
+            'job_name'               => 'Multi-tech job',
+            'job_description'        => 'Desc.',
+            'job_type'               => JobType::Survey->value,
+            'early_start_window'     => EarlyStartWindow::Anytime->value,
+            'technician_profile_ids' => [$profile->id],
         ])
         ->assertRedirect();
 
     $job = ServiceJob::where('job_reference', 'JOB-005')->first();
     expect($job)->not->toBeNull();
     $this->assertDatabaseHas('job_technicians', [
-        'job_id'            => $job->id,
-        'user_id'           => $tech->id,
-        'technician_status' => 'invited',
+        'job_id'                => $job->id,
+        'technician_profile_id' => $profile->id,
+        'technician_status'     => 'invited',
     ]);
 });
 
-it('cannot assign a non-technician user', function () {
-    $pm      = User::factory()->pm()->create();
-    $notTech = User::factory()->pm()->create(); // another PM
-    $store   = Store::factory()->create();
+it('cannot assign an inactive technician profile', function () {
+    $pm              = User::factory()->pm()->create();
+    $inactiveProfile = TechnicianProfile::factory()->inactive()->create();
+    $store           = Store::factory()->create();
 
     $this->actingAs($pm)
         ->post(route('jobs.store'), [
-            'store_id'           => $store->id,
-            'job_reference'      => 'JOB-006',
-            'job_name'           => 'Test',
-            'job_description'    => 'Desc.',
-            'job_type'           => JobType::Survey->value,
-            'early_start_window' => EarlyStartWindow::Anytime->value,
-            'technician_ids'     => [$notTech->id],
+            'store_id'               => $store->id,
+            'job_reference'          => 'JOB-006',
+            'job_name'               => 'Test',
+            'job_description'        => 'Desc.',
+            'job_type'               => JobType::Survey->value,
+            'early_start_window'     => EarlyStartWindow::Anytime->value,
+            'technician_profile_ids' => [$inactiveProfile->id],
         ])
-        ->assertSessionHasErrors('technician_ids');
+        ->assertSessionHasErrors('technician_profile_ids');
 });
 
 // ── Hierarchy (US-08.5) ────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ use App\Models\Client;
 use App\Models\JobAttachment;
 use App\Models\ServiceJob;
 use App\Models\Store;
-use App\Models\User;
+use App\Models\TechnicianProfile;
 use App\Services\AssetTransitionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,7 +90,7 @@ class ServiceJobController extends Controller
             $this->syncAffectedAssets($job, $validated['asset_ids'] ?? []);
 
             // Assign technicians (US-08.4)
-            $this->syncTechnicians($job, $validated['technician_ids'] ?? []);
+            $this->syncTechnicians($job, $validated['technician_profile_ids'] ?? []);
 
             return $job;
         });
@@ -153,7 +153,7 @@ class ServiceJobController extends Controller
             ]);
 
             $this->syncAffectedAssets($job, $validated['asset_ids'] ?? []);
-            $this->syncTechnicians($job, $validated['technician_ids'] ?? []);
+            $this->syncTechnicians($job, $validated['technician_profile_ids'] ?? []);
         });
 
         return redirect()
@@ -315,19 +315,21 @@ class ServiceJobController extends Controller
     }
 
     /**
-     * Sync the assigned-technicians pivot, preserving existing lifecycle state
-     * and initialising new entries as 'invited' (US-08.4).
+     * Sync the assigned-technician-profiles pivot, preserving existing lifecycle state
+     * and initialising new entries as 'invited' (US-08.4/09.1).
      *
-     * @param  list<int>  $technicianIds
+     * @param  list<int>  $profileIds
      */
-    private function syncTechnicians(ServiceJob $job, array $technicianIds): void
+    private function syncTechnicians(ServiceJob $job, array $profileIds): void
     {
-        $existing = $job->technicians()->pluck('technician_status', 'users.id')->toArray();
+        $existing = $job->technicians()
+            ->pluck('technician_status', 'job_technicians.technician_profile_id')
+            ->toArray();
 
         $syncData = [];
-        foreach ($technicianIds as $userId) {
-            $syncData[(int) $userId] = [
-                'technician_status' => $existing[(int) $userId] ?? 'invited',
+        foreach ($profileIds as $profileId) {
+            $syncData[(int) $profileId] = [
+                'technician_status' => $existing[(int) $profileId] ?? 'invited',
             ];
         }
 
@@ -351,7 +353,7 @@ class ServiceJobController extends Controller
 
         $jobTypes          = JobType::cases();
         $earlyStartWindows = EarlyStartWindow::cases();
-        $technicians       = User::where('role', 'technician')->orderBy('name')->get(['id', 'name', 'email']);
+        $technicians       = TechnicianProfile::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
         $parentJobs        = ServiceJob::where('job_level', 0)
             ->orderByDesc('created_at')
             ->limit(50)

@@ -87,11 +87,15 @@ class ServiceJob extends BaseModel
         return $this->belongsToMany(Asset::class, 'job_assets', 'job_id', 'asset_id');
     }
 
-    /** Assigned technicians with their per-technician lifecycle (US-08.4). */
+    /** Assigned technicians with their per-technician lifecycle (US-08.4/09.1). */
     public function technicians(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'job_technicians', 'job_id', 'user_id')
-            ->withPivot('technician_status', 'force_complete_reason');
+        return $this->belongsToMany(
+            TechnicianProfile::class,
+            'job_technicians',
+            'job_id',
+            'technician_profile_id'
+        )->withPivot('technician_status', 'invitation_token', 'token_expires_at', 'force_complete_reason');
     }
 
     /** PM attachments (US-08.6). */

@@ -66,5 +66,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('qr.lookup', function (Request $request) {
             return Limit::perMinute(30)->by($request->ip());
         });
+
+        // Invitation send — 10 sends/min per authenticated user (§14.3 flood protection)
+        RateLimiter::for('invitation.send', function (Request $request) {
+            $user = $request->user();
+
+            return Limit::perMinute(10)->by($user ? $user->id : $request->ip());
+        });
     }
 }
