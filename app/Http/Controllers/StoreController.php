@@ -6,6 +6,7 @@ use App\Enums\AustralianState;
 use App\Enums\StoreType;
 use App\Http\Requests\CreateStoreRequest;
 use App\Http\Requests\UpdateStoreRequest;
+use App\Models\Asset;
 use App\Models\Client;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
@@ -49,8 +50,16 @@ class StoreController extends Controller
     {
         $this->authorize('view', $store);
 
+        $assetCount = Asset::where('store_id', $store->id)->count();
+        $assets     = Asset::where('store_id', $store->id)
+            ->orderBy('asset_name')
+            ->limit(10)
+            ->get();
+
         return view('stores.show', [
-            'store' => $store->load('client'),
+            'store'      => $store->load('client'),
+            'assets'     => $assets,
+            'assetCount' => $assetCount,
         ]);
     }
 
