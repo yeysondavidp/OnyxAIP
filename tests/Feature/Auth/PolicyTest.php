@@ -6,13 +6,16 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+// PolicyTest uses factories to avoid coupling to specific required field values.
+// Policy assertions are about role/client_id logic, not field validation.
+
 uses(RefreshDatabase::class);
 
 // ── ClientPolicy ──────────────────────────────────────────────────────────────
 
 it('pm can view any client', function () {
     $pm     = User::factory()->create(['role' => UserRole::Pm]);
-    $client = Client::create(['name' => 'Pandora', 'client_code' => 'PAN']);
+    $client = Client::factory()->create(['client_name' => 'Pandora', 'client_code' => 'PAN']);
 
     expect($pm->can('view', $client))->toBeTrue()
         ->and($pm->can('viewAny', Client::class))->toBeTrue();
@@ -20,7 +23,7 @@ it('pm can view any client', function () {
 
 it('pm can create update and delete clients', function () {
     $pm     = User::factory()->create(['role' => UserRole::Pm]);
-    $client = Client::create(['name' => 'Sephora', 'client_code' => 'SEP']);
+    $client = Client::factory()->create(['client_name' => 'Sephora', 'client_code' => 'SEP']);
 
     expect($pm->can('create', Client::class))->toBeTrue()
         ->and($pm->can('update', $client))->toBeTrue()
@@ -28,8 +31,8 @@ it('pm can create update and delete clients', function () {
 });
 
 it('client_user can only view their own client', function () {
-    $clientA = Client::create(['name' => 'Pandora', 'client_code' => 'PAN']);
-    $clientB = Client::create(['name' => 'Sephora', 'client_code' => 'SEP']);
+    $clientA = Client::factory()->create(['client_name' => 'Pandora', 'client_code' => 'PAN']);
+    $clientB = Client::factory()->create(['client_name' => 'Sephora', 'client_code' => 'SEP']);
 
     $user = User::factory()->create(['role' => UserRole::ClientUser, 'client_id' => $clientA->id]);
 
@@ -38,7 +41,7 @@ it('client_user can only view their own client', function () {
 });
 
 it('client_user cannot create or mutate clients', function () {
-    $clientA = Client::create(['name' => 'Pandora', 'client_code' => 'PAN']);
+    $clientA = Client::create(['client_name' => 'Pandora', 'client_code' => 'PAN']);
     $user    = User::factory()->create(['role' => UserRole::ClientUser, 'client_id' => $clientA->id]);
 
     expect($user->can('create', Client::class))->toBeFalse()
@@ -47,7 +50,7 @@ it('client_user cannot create or mutate clients', function () {
 });
 
 it('technician cannot access client resources', function () {
-    $client = Client::create(['name' => 'Pandora', 'client_code' => 'PAN']);
+    $client = Client::factory()->create(['client_name' => 'Pandora', 'client_code' => 'PAN']);
     $tech   = User::factory()->technician()->create();
 
     expect($tech->can('viewAny', Client::class))->toBeFalse()
@@ -58,11 +61,11 @@ it('technician cannot access client resources', function () {
 // ── StorePolicy ───────────────────────────────────────────────────────────────
 
 it('pm can view any store regardless of client', function () {
-    $clientA = Client::create(['name' => 'Pandora', 'client_code' => 'PAN']);
-    $clientB = Client::create(['name' => 'Sephora', 'client_code' => 'SEP']);
+    $clientA = Client::factory()->create(['client_name' => 'Pandora', 'client_code' => 'PAN']);
+    $clientB = Client::factory()->create(['client_name' => 'Sephora', 'client_code' => 'SEP']);
     $pm      = User::factory()->create(['role' => UserRole::Pm]);
-    $storeA  = Store::create(['client_id' => $clientA->id, 'name' => 'Pitt St', 'store_code' => 'PAN-SYD-001']);
-    $storeB  = Store::create(['client_id' => $clientB->id, 'name' => 'Bondi', 'store_code' => 'SEP-SYD-001']);
+    $storeA  = Store::factory()->create(['client_id' => $clientA->id, 'store_code' => 'PAN-SYD-001']);
+    $storeB  = Store::factory()->create(['client_id' => $clientB->id, 'store_code' => 'SEP-SYD-001']);
 
     expect($pm->can('view', $storeA))->toBeTrue()
         ->and($pm->can('view', $storeB))->toBeTrue()
@@ -71,10 +74,10 @@ it('pm can view any store regardless of client', function () {
 });
 
 it('client_user cannot view stores from another client', function () {
-    $clientA = Client::create(['name' => 'Pandora', 'client_code' => 'PAN']);
-    $clientB = Client::create(['name' => 'Sephora', 'client_code' => 'SEP']);
-    $storeA  = Store::create(['client_id' => $clientA->id, 'name' => 'Pitt St', 'store_code' => 'PAN-SYD-001']);
-    $storeB  = Store::create(['client_id' => $clientB->id, 'name' => 'Bondi', 'store_code' => 'SEP-SYD-001']);
+    $clientA = Client::factory()->create(['client_name' => 'Pandora', 'client_code' => 'PAN']);
+    $clientB = Client::factory()->create(['client_name' => 'Sephora', 'client_code' => 'SEP']);
+    $storeA  = Store::factory()->create(['client_id' => $clientA->id, 'store_code' => 'PAN-SYD-001']);
+    $storeB  = Store::factory()->create(['client_id' => $clientB->id, 'store_code' => 'SEP-SYD-001']);
 
     $user = User::factory()->create(['role' => UserRole::ClientUser, 'client_id' => $clientA->id]);
 
@@ -83,8 +86,8 @@ it('client_user cannot view stores from another client', function () {
 });
 
 it('client_user cannot mutate stores even within their own client', function () {
-    $clientA = Client::create(['name' => 'Pandora', 'client_code' => 'PAN']);
-    $storeA  = Store::create(['client_id' => $clientA->id, 'name' => 'Pitt St', 'store_code' => 'PAN-SYD-001']);
+    $clientA = Client::factory()->create(['client_name' => 'Pandora', 'client_code' => 'PAN']);
+    $storeA  = Store::factory()->create(['client_id' => $clientA->id, 'store_code' => 'PAN-SYD-001']);
     $user    = User::factory()->create(['role' => UserRole::ClientUser, 'client_id' => $clientA->id]);
 
     expect($user->can('update', $storeA))->toBeFalse()

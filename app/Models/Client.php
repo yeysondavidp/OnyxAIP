@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Traits\Auditable;
+use Database\Factories\ClientFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -11,18 +13,24 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Client extends BaseModel
 {
-    use Auditable;
+    /** @use HasFactory<ClientFactory> */
+    use Auditable, HasFactory;
 
     protected $fillable = [
-        'name',
+        'client_name',
         'client_code',
+        'primary_contact',
+        'primary_email',
+        'notes',
+        'sla_profile_id',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
+            'is_active'      => 'boolean',
+            'sla_profile_id' => 'integer',
         ];
     }
 

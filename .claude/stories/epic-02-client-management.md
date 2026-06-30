@@ -17,7 +17,7 @@ profile CRUD — placeholder dependency). SRA: §3.1 (Client model), §10.1 (SLA
 **So that** ONYX has an accurate register of every brand account and all downstream records
 (stores, assets, jobs) are correctly attributed.
 
-**Estimate:** 8 · **Priority:** P0 · **Depends on:** US-00.3, US-00.4, US-00.5, US-01.3 · **Status:** 📋 Ready
+**Estimate:** 8 · **Priority:** P0 · **Depends on:** US-00.3, US-00.4, US-00.5, US-01.3 · **Status:** ✅ Done
 
 ### Acceptance criteria
 
@@ -94,7 +94,7 @@ designed; one happy-path integration test (`pm` creates a client) and one deny t
 **So that** SLA clock logic (EPIC-10/12) knows which response and resolution windows apply to
 each brand, and the linkage survives changes to either side.
 
-**Estimate:** 3 · **Priority:** P1 · **Depends on:** US-02.1, US-12.1 (SLA profile CRUD — ⏸ Blocked: US-12.1 not yet written; implement placeholder FK + null selection in the interim) · **Status:** ⏸ Blocked (US-12.1 must exist or a seed placeholder SLA profile must be present before the selection UI is meaningful; story is Ready to implement the linkage and UI now, but full acceptance requires at least one SLA profile record)
+**Estimate:** 3 · **Priority:** P1 · **Depends on:** US-02.1, US-12.1 (SLA profile CRUD — ⏸ Blocked: US-12.1 not yet written; implement placeholder FK + null selection in the interim) · **Status:** ✅ Done (FK present, null accepted with empty-state message on form + warning on detail; full dropdown requires US-12.1)
 
 ### Acceptance criteria
 
@@ -155,7 +155,7 @@ accepted.
 **So that** I can quickly find any brand account, see its active/inactive state at a glance,
 and navigate to its detail or edit it — without wading through stale or irrelevant records.
 
-**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-02.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-02.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 

@@ -18,7 +18,7 @@ fields including state, store type, IANA timezone, and store manager contact det
 client before assets or jobs are attached.
 
 **Estimate:** 8 · **Priority:** P0 · **Depends on:** US-00.3, US-00.4, US-00.5, US-01.3,
-EPIC-02 · **Status:** 📋 Ready
+EPIC-02 · **Status:** ✅ Done
 
 ### Acceptance criteria
 
@@ -87,7 +87,7 @@ Pint + Larastan clean; one happy-path integration test; cross-tenant deny test.
 scrolling through hundreds of entries.
 
 **Estimate:** 5 · **Priority:** P0 · **Depends on:** US-00.3, US-01.3, US-03.1 · **Status:**
-📋 Ready
+✅ Done
 
 ### Acceptance criteria
 

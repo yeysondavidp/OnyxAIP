@@ -25,7 +25,7 @@ class AuditableTraitTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = Client::create(['name' => 'ACME', 'client_code' => 'ACM']);
+        $this->client = Client::factory()->create(['client_name' => 'ACME', 'client_code' => 'ACM']);
     }
 
     public function test_created_event_writes_audit_log(): void
@@ -33,9 +33,9 @@ class AuditableTraitTest extends TestCase
         $pm = User::factory()->create(['client_id' => null]);
         $this->actingAs($pm);
 
-        $store = Store::create([
+        $store = Store::factory()->create([
             'client_id'  => $this->client->id,
-            'name'       => 'Test Store',
+            'store_name' => 'Test Store',
             'store_code' => 'ACM-001',
         ]);
 
@@ -47,20 +47,20 @@ class AuditableTraitTest extends TestCase
         $this->assertNotNull($log, 'A created audit entry must exist.');
         $this->assertSame($pm->id, $log->user_id);
         $this->assertNull($log->before);
-        $this->assertArrayHasKey('name', $log->after);
+        $this->assertArrayHasKey('store_name', $log->after);
     }
 
     public function test_updated_event_writes_audit_log(): void
     {
         $pm    = User::factory()->create(['client_id' => null]);
-        $store = Store::create([
+        $store = Store::factory()->create([
             'client_id'  => $this->client->id,
-            'name'       => 'Before',
+            'store_name' => 'Before',
             'store_code' => 'ACM-002',
         ]);
         $this->actingAs($pm);
 
-        $store->update(['name' => 'After']);
+        $store->update(['store_name' => 'After']);
 
         $log = AuditLog::where('auditable_type', Store::class)
             ->where('auditable_id', $store->id)
@@ -68,16 +68,16 @@ class AuditableTraitTest extends TestCase
             ->first();
 
         $this->assertNotNull($log, 'An updated audit entry must exist.');
-        $this->assertSame('Before', $log->before['name'] ?? null);
-        $this->assertSame('After', $log->after['name'] ?? null);
+        $this->assertSame('Before', $log->before['store_name'] ?? null);
+        $this->assertSame('After', $log->after['store_name'] ?? null);
     }
 
     public function test_deleted_event_writes_audit_log(): void
     {
         $pm    = User::factory()->create(['client_id' => null]);
-        $store = Store::create([
+        $store = Store::factory()->create([
             'client_id'  => $this->client->id,
-            'name'       => 'To Delete',
+            'store_name' => 'To Delete',
             'store_code' => 'ACM-003',
         ]);
         $this->actingAs($pm);
@@ -92,7 +92,7 @@ class AuditableTraitTest extends TestCase
 
         $this->assertNotNull($log, 'A deleted audit entry must exist.');
         $this->assertNull($log->after);
-        $this->assertArrayHasKey('name', $log->before);
+        $this->assertArrayHasKey('store_name', $log->before);
     }
 
     public function test_sensitive_fields_are_stripped_from_diff(): void
@@ -111,7 +111,7 @@ class AuditableTraitTest extends TestCase
     public function test_unauthenticated_action_records_null_user_id(): void
     {
         // No actingAs — simulates a CLI/seeder action
-        Client::create(['name' => 'Anon Client', 'client_code' => 'ANN']);
+        Client::factory()->create(['client_name' => 'Anon Client', 'client_code' => 'ANN']);
 
         $log = AuditLog::where('auditable_type', Client::class)
             ->where('action', 'created')

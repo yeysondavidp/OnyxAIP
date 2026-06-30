@@ -31,12 +31,12 @@ class ClientScopeTest extends TestCase
     {
         parent::setUp();
 
-        $this->clientA = Client::create(['name' => 'Client A', 'client_code' => 'CA']);
-        $this->clientB = Client::create(['name' => 'Client B', 'client_code' => 'CB']);
+        $this->clientA = Client::factory()->create(['client_code' => 'CA']);
+        $this->clientB = Client::factory()->create(['client_code' => 'CB']);
 
-        Store::create(['client_id' => $this->clientA->id, 'name' => 'Store A1', 'store_code' => 'CA-001']);
-        Store::create(['client_id' => $this->clientA->id, 'name' => 'Store A2', 'store_code' => 'CA-002']);
-        Store::create(['client_id' => $this->clientB->id, 'name' => 'Store B1', 'store_code' => 'CB-001']);
+        Store::factory()->create(['client_id' => $this->clientA->id, 'store_code' => 'CA-001']);
+        Store::factory()->create(['client_id' => $this->clientA->id, 'store_code' => 'CA-002']);
+        Store::factory()->create(['client_id' => $this->clientB->id, 'store_code' => 'CB-001']);
     }
 
     public function test_pm_with_no_client_id_sees_all_stores(): void
@@ -83,8 +83,8 @@ class ClientScopeTest extends TestCase
         $user = User::factory()->clientUser()->create(['client_id' => $this->clientA->id]);
         $this->actingAs($user);
 
-        // Don't pass client_id — the trait must inject it from the auth context.
-        $store = Store::create(['name' => 'Auto-scoped Store', 'store_code' => 'CA-AUTO']);
+        // client_id => null forces the creating event to inject it from the auth context.
+        $store = Store::factory()->create(['client_id' => null, 'store_code' => 'CA-AUTO']);
 
         $this->assertSame($this->clientA->id, $store->client_id);
     }
@@ -94,7 +94,7 @@ class ClientScopeTest extends TestCase
         $this->expectException(QueryException::class);
 
         DB::table('stores')->insert([
-            'name'       => 'No client',
+            'store_name' => 'No client',
             'store_code' => 'NO-001',
             'is_active'  => 1,
             'created_at' => now(),

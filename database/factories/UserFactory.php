@@ -37,6 +37,14 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function pm(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role'      => UserRole::Pm,
+            'client_id' => null,
+        ]);
+    }
+
     public function technician(): static
     {
         return $this->state(fn (array $attributes) => [

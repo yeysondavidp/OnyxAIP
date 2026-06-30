@@ -46,6 +46,28 @@ every future feature is in place and proven by tests — including the technicia
 
 Committed stories: **US-01.1 → US-01.5** (see `stories/epic-01-identity-security.md`).
 
+## Sprint 2 — detailed (complete)
+
+**Sprint goal:** *"PM can create clients and stores and open a store dashboard — the first
+tenant-scoped CRUD surfaces, proving the security spine end-to-end."*
+
+Committed stories: **US-02.1, US-02.2, US-02.3, US-03.1, US-03.2** (US-03.3 and US-03.4
+blocked by EPIC-04 / EPIC-06 / EPIC-08 / EPIC-12 — placeholder views shipped with designed
+empty states).
+
+Definition of sprint done:
+- Full CRUD for `clients` and `stores` (create, read, edit, deactivate — no hard delete).
+- Defence-in-depth on every mutation: UI + FormRequest + Policy + DB unique index.
+- `client_code` / `store_code` unique at DB + application layers.
+- State and StoreType stored as PHP enums; IANA timezone validated server-side.
+- Livewire client list: search (`#[Url]`), active/inactive toggle.
+- Livewire store list: search + client/state/type filters (`#[Url]`), active filter pills,
+  inactive toggle.
+- Store dashboard skeleton: metadata, asset inventory placeholder, open faults placeholder,
+  SLA placeholder — all with designed empty states.
+- SLA profile FK on `clients`: nullable, empty-state message in form, warning on detail page.
+- 81/81 tests green; Pint + Larastan clean.
+
 ## Cadence & ceremonies (lightweight for vibecoding)
 
 - **Sprint length:** 1 week (adjust after velocity is known).
