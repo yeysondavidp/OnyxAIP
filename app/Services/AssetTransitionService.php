@@ -30,7 +30,8 @@ class AssetTransitionService
 {
     /** @var array<string, list<string>> permitted target statuses keyed by current status value */
     private const PERMITTED = [
-        'active'            => ['faulty', 'offline', 'decommissioned'],
+        // SRA §4.5 core transitions + §5.2 job-creation auto-transition (Active → UnderMaintenance)
+        'active'            => ['faulty', 'offline', 'under_maintenance', 'decommissioned'],
         'faulty'            => ['under_maintenance', 'decommissioned'],
         'offline'           => ['active', 'decommissioned'],
         'under_maintenance' => ['active', 'decommissioned'],

@@ -78,6 +78,17 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::resource('stores', StoreController::class);
     Route::resource('assets', AssetController::class);
     Route::resource('jobs', ServiceJobController::class);
+
+    // Job transitions (US-08.3)
+    Route::post('/jobs/{job}/invite', [ServiceJobController::class, 'invite'])->name('jobs.invite');
+    Route::post('/jobs/{job}/validate', [ServiceJobController::class, 'validate'])->name('jobs.validate');
+    Route::post('/jobs/{job}/flag-remediation', [ServiceJobController::class, 'flagRemediation'])->name('jobs.flag-remediation');
+    Route::post('/jobs/{job}/force-complete', [ServiceJobController::class, 'forceComplete'])->name('jobs.force-complete');
+
+    // Job attachments (US-08.6)
+    Route::post('/jobs/{job}/attachments', [ServiceJobController::class, 'storeAttachment'])->name('jobs.attachments.store');
+    Route::get('/jobs/{job}/attachments/{attachment}/download', [ServiceJobController::class, 'downloadAttachment'])->name('jobs.attachments.download');
+    Route::delete('/jobs/{job}/attachments/{attachment}', [ServiceJobController::class, 'destroyAttachment'])->name('jobs.attachments.destroy');
     Route::resource('technicians', TechnicianController::class);
 
     // Display Groups — nested under stores

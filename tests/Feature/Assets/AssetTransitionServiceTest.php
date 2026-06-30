@@ -119,8 +119,9 @@ it('isPermitted returns false for unknown transition', function () {
 it('permittedTransitionsFrom active returns correct set', function () {
     $permitted = $this->service->permittedTransitionsFrom(AssetStatus::Active);
 
+    // SRA §5.2: Active → UnderMaintenance is permitted (job-creation auto-transition)
     expect($permitted)->toContain(AssetStatus::Faulty)
         ->toContain(AssetStatus::Offline)
         ->toContain(AssetStatus::Decommissioned)
-        ->not->toContain(AssetStatus::UnderMaintenance);
+        ->toContain(AssetStatus::UnderMaintenance);
 });
