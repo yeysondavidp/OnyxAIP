@@ -145,12 +145,43 @@ Route::middleware(['signed', 'throttle:guest.job'])->group(function () {
     Route::post('/job/{job}/decline', [TechnicianController::class, 'declineInvite'])
         ->name('technician.job.decline');
 
+    // Screen 1 — Job overview
     Route::get('/job/{job}/start', [JobFlowController::class, 'overview'])
         ->name('technician.job.overview');
 
+    // Start checkpoint → Screen 2
     Route::post('/job/{job}/start', [JobFlowController::class, 'start'])
         ->name('technician.job.start');
 
+    Route::post('/job/{job}/cancel-start', [JobFlowController::class, 'cancelStart'])
+        ->name('technician.job.cancel-start');
+
+    // Screen 2 — Before photos
+    Route::get('/job/{job}/before-photos', [JobFlowController::class, 'beforePhotos'])
+        ->name('technician.job.before-photos');
+
+    // Screen 3 — Briefing & asset reference
+    Route::get('/job/{job}/brief', [JobFlowController::class, 'brief'])
+        ->name('technician.job.brief');
+
+    // In-flow asset status update (Screen 3, rate-limited via throttle:guest.job)
+    Route::post('/job/{job}/assets/{asset}/status', [JobFlowController::class, 'updateAssetStatus'])
+        ->name('technician.job.asset-status');
+
+    // Screen 4 — After photos & outcomes
+    Route::get('/job/{job}/after-photos', [JobFlowController::class, 'afterPhotos'])
+        ->name('technician.job.after-photos');
+
+    // Photo upload — rate-limited (applies the photo.upload limiter inside the signed group)
+    Route::post('/job/{job}/photos', [JobFlowController::class, 'uploadPhoto'])
+        ->middleware('throttle:photo.upload')
+        ->name('technician.job.photos');
+
+    // Complete checkpoint → Screen 5
     Route::post('/job/{job}/complete', [JobFlowController::class, 'complete'])
         ->name('technician.job.complete');
+
+    // Screen 5 — Summary
+    Route::get('/job/{job}/summary', [JobFlowController::class, 'summary'])
+        ->name('technician.job.summary');
 });

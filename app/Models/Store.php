@@ -10,6 +10,10 @@ use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property AustralianState $state
+ * @property StoreType $store_type
+ */
 class Store extends BaseModel
 {
     /** @use HasFactory<StoreFactory> */

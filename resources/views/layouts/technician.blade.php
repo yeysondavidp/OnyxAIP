@@ -78,6 +78,18 @@
             flex-direction: column;
             gap: var(--space-3);
         }
+
+        /* Sticky bottom action bar shared across all 5 screens */
+        .tech-sticky-bar {
+            position: sticky;
+            bottom: 0;
+            background: var(--surface-page);
+            border-top: 1px solid var(--border-subtle);
+            padding: var(--space-4) var(--space-5);
+            padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+        }
+
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body>
