@@ -113,9 +113,9 @@ it('start checkpoint records GPS and flips status to started', function () {
     $this->assertDatabaseHas('job_checkpoints', [
         'job_id'                => $job->id,
         'technician_profile_id' => $profile->id,
-        'gps_status'            => 'not-checked', // field not set yet
+        'start_gps_status'      => 'granted',
     ]);
-})->skip('field name mismatch — use direct assertDatabaseHas below');
+});
 
 it('start checkpoint writes start_timestamp_utc and gps data', function () {
     [$job, $profile, $token] = setupJobAndProfile();
