@@ -71,6 +71,22 @@
                         helper="Internal ONYX notes — not visible to the client."
                     >{{ old('notes', $client->notes) }}</x-onyx.textarea>
 
+                    <x-onyx.divider />
+
+                    <x-onyx.select
+                        name="sla_profile_id"
+                        label="SLA profile"
+                        :error="$errors->first('sla_profile_id')"
+                        helper="Defines response and resolution targets for this client's fault jobs."
+                    >
+                        <option value="">— No SLA profile —</option>
+                        @foreach ($slaProfiles as $profile)
+                            <option value="{{ $profile->id }}" @selected((string) old('sla_profile_id', $client->sla_profile_id) === (string) $profile->id)>
+                                {{ $profile->name }}{{ !$profile->is_active ? ' (inactive)' : '' }}
+                            </option>
+                        @endforeach
+                    </x-onyx.select>
+
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">

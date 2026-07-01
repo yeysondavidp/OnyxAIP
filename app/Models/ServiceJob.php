@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Enums\EarlyStartWindow;
 use App\Enums\JobStatus;
 use App\Enums\JobType;
+use App\Enums\SlaStatus;
 use App\Enums\TechnicianJobStatus;
 use App\Services\JobTransitionService;
+use App\Services\Sla\SlaClockService;
 use App\Traits\Auditable;
 use App\Traits\ClientScoped;
 use Database\Factories\ServiceJobFactory;
@@ -15,11 +17,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property JobStatus $job_status
  * @property JobType $job_type
  * @property EarlyStartWindow $early_start_window
+ * @property Carbon|null $sla_clock_started_at
+ * @property Carbon|null $sla_resolution_target_at
+ * @property Carbon|null $sla_at_risk_at
  */
 class ServiceJob extends BaseModel
 {
@@ -44,6 +50,11 @@ class ServiceJob extends BaseModel
         'job_level',
         'client_email',
         'client_name',
+        'sla_profile_id',
+        'sla_clock_started_at',
+        'sla_resolution_target_at',
+        'sla_at_risk_at',
+        'sla_at_risk',
         'sla_breached',
         'force_complete_reason',
     ];
@@ -51,11 +62,15 @@ class ServiceJob extends BaseModel
     protected function casts(): array
     {
         return [
-            'job_type'           => JobType::class,
-            'job_status'         => JobStatus::class,
-            'early_start_window' => EarlyStartWindow::class,
-            'scheduled_date'     => 'date',
-            'sla_breached'       => 'boolean',
+            'job_type'                 => JobType::class,
+            'job_status'               => JobStatus::class,
+            'early_start_window'       => EarlyStartWindow::class,
+            'scheduled_date'           => 'date',
+            'sla_clock_started_at'     => 'datetime',
+            'sla_resolution_target_at' => 'datetime',
+            'sla_at_risk_at'           => 'datetime',
+            'sla_at_risk'              => 'boolean',
+            'sla_breached'             => 'boolean',
         ];
     }
 
@@ -69,6 +84,12 @@ class ServiceJob extends BaseModel
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    /** Snapshot of the profile in effect when the SLA clock started (US-12.2). */
+    public function slaProfile(): BelongsTo
+    {
+        return $this->belongsTo(SlaProfile::class);
     }
 
     public function parent(): BelongsTo
@@ -115,6 +136,18 @@ class ServiceJob extends BaseModel
     public function transitionTo(JobStatus $newStatus, ?User $actor = null, ?string $reason = null): void
     {
         app(JobTransitionService::class)->transitionTo($this, $newStatus, $actor, $reason);
+    }
+
+    // ── SLA (US-12.3) ──────────────────────────────────────────────────────────
+
+    /** Pure read of the stored SLA columns — no live computation on hot paths. */
+    public function slaStatus(): SlaStatus
+    {
+        return SlaClockService::statusFor(
+            $this->sla_clock_started_at?->toIso8601String(),
+            $this->sla_at_risk,
+            $this->sla_breached,
+        );
     }
 
     // ── Hierarchy helpers ──────────────────────────────────────────────────────

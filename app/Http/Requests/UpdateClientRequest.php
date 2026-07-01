@@ -14,7 +14,9 @@ class UpdateClientRequest extends FormRequest
 
     public function rules(): array
     {
-        $clientId = $this->route('client')?->id;
+        $client           = $this->route('client');
+        $clientId         = $client?->id;
+        $currentProfileId = $client?->sla_profile_id;
 
         return [
             'client_name'     => ['required', 'string', 'max:255'],
@@ -22,7 +24,15 @@ class UpdateClientRequest extends FormRequest
             'primary_contact' => ['nullable', 'string', 'max:255'],
             'primary_email'   => ['nullable', 'email', 'max:255'],
             'notes'           => ['nullable', 'string', 'max:5000'],
-            'is_active'       => ['sometimes', 'boolean'],
+            // Allow keeping an already-assigned profile even if it has since been
+            // deactivated — only *new* assignments must be to an active profile.
+            'sla_profile_id' => ['nullable', Rule::exists('sla_profiles', 'id')->where(
+                fn ($q) => $q->where('is_active', true)->when(
+                    $currentProfileId,
+                    fn ($q) => $q->orWhere('id', $currentProfileId)
+                )
+            )],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 

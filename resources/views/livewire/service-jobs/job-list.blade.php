@@ -38,6 +38,11 @@
             <input type="checkbox" wire:model.live="filterSlaBreached" style="accent-color: var(--bronze-600);">
             SLA breached only
         </label>
+
+        <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-14); color: var(--text-primary); cursor: pointer; height: 40px; white-space: nowrap;">
+            <input type="checkbox" wire:model.live="filterSlaAtRisk" style="accent-color: var(--bronze-600);">
+            At risk only
+        </label>
     </div>
 
     {{-- Table ─────────────────────────────────────────────────────────── --}}
@@ -61,6 +66,7 @@
                         <th style="text-align: left; padding: var(--space-2) var(--space-3); font-weight: var(--weight-semibold); color: var(--text-secondary);">Store</th>
                         <th style="text-align: left; padding: var(--space-2) var(--space-3); font-weight: var(--weight-semibold); color: var(--text-secondary); white-space: nowrap;">Scheduled</th>
                         <th style="text-align: left; padding: var(--space-2) var(--space-3); font-weight: var(--weight-semibold); color: var(--text-secondary);">Status</th>
+                        <th style="text-align: left; padding: var(--space-2) var(--space-3); font-weight: var(--weight-semibold); color: var(--text-secondary);">SLA</th>
                         <th style="text-align: left; padding: var(--space-2) var(--space-3); font-weight: var(--weight-semibold); color: var(--text-secondary);">Technicians</th>
                         <th></th>
                     </tr>
@@ -70,9 +76,6 @@
                         <tr style="border-bottom: 1px solid var(--border-subtle);">
                             <td style="padding: var(--space-3); white-space: nowrap;">
                                 <span style="font-family: monospace; font-size: var(--fs-13); color: var(--text-secondary);">{{ $job->job_reference }}</span>
-                                @if ($job->sla_breached)
-                                    <x-onyx.badge tone="critical" variant="soft" style="margin-left: var(--space-1);">SLA</x-onyx.badge>
-                                @endif
                             </td>
                             <td style="padding: var(--space-3);">
                                 <a href="{{ route('jobs.show', $job) }}"
@@ -103,6 +106,9 @@
                                 <x-onyx.badge :tone="$job->job_status->tone()" variant="soft">
                                     {{ $job->job_status->label() }}
                                 </x-onyx.badge>
+                            </td>
+                            <td style="padding: var(--space-3);">
+                                <x-onyx.sla-badge :status="$job->slaStatus()" />
                             </td>
                             <td style="padding: var(--space-3); color: var(--text-secondary);">
                                 {{ $job->technicians->count() ?: '—' }}

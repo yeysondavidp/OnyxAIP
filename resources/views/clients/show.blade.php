@@ -104,9 +104,19 @@
 
             {{-- SLA Profile --}}
             <x-onyx.card variant="default" padding="md">
-                <h2 style="font-size: var(--fs-14); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-3);">SLA Profile</h2>
-                @if ($client->sla_profile_id)
-                    <p style="font-size: var(--fs-14); color: var(--text-secondary);">Profile #{{ $client->sla_profile_id }}</p>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+                    <h2 style="font-size: var(--fs-14); font-weight: var(--weight-semibold); color: var(--text-primary);">SLA Profile</h2>
+                    <x-onyx.button href="{{ route('clients.edit', $client) }}" variant="ghost" size="sm">
+                        {{ $client->slaProfile ? 'Change' : 'Assign' }}
+                    </x-onyx.button>
+                </div>
+                @if ($client->slaProfile)
+                    <a href="{{ route('sla-profiles.show', $client->slaProfile) }}" style="font-size: var(--fs-14); font-weight: var(--weight-medium); color: var(--bronze-600); text-decoration: none;">
+                        {{ $client->slaProfile->name }}
+                    </a>
+                    <p style="font-size: var(--fs-13); color: var(--text-secondary); margin-top: var(--space-1);">
+                        Resolution target: {{ $client->slaProfile->resolution_hours }} business hours
+                    </p>
                 @else
                     <x-onyx.alert tone="caution">
                         This client has no SLA profile — SLA tracking is disabled.

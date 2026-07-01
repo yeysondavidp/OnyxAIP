@@ -30,6 +30,9 @@ class JobList extends Component
     #[Url(as: 'sla')]
     public bool $filterSlaBreached = false;
 
+    #[Url(as: 'sla_at_risk')]
+    public bool $filterSlaAtRisk = false;
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -51,6 +54,11 @@ class JobList extends Component
     }
 
     public function updatedFilterSlaBreached(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterSlaAtRisk(): void
     {
         $this->resetPage();
     }
@@ -79,6 +87,7 @@ class JobList extends Component
                 $q->whereHas('store', fn ($sq) => $sq->where('state', $this->filterState));
             })
             ->when($this->filterSlaBreached, fn ($q) => $q->where('sla_breached', true))
+            ->when($this->filterSlaAtRisk, fn ($q) => $q->where('sla_at_risk', true)->where('sla_breached', false))
             ->orderByDesc('created_at')
             ->paginate(25);
     }

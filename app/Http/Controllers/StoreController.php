@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AustralianState;
+use App\Enums\JobStatus;
 use App\Enums\StoreType;
 use App\Http\Requests\CreateStoreRequest;
 use App\Http\Requests\UpdateStoreRequest;
 use App\Models\Asset;
 use App\Models\Client;
 use App\Models\DisplayGroup;
+use App\Models\ServiceJob;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -61,11 +63,21 @@ class StoreController extends Controller
             ->orderBy('group_name')
             ->get();
 
+        // Open, SLA-tracked jobs for this store (§8, US-12.3)
+        $slaTrackedJobs = ServiceJob::where('store_id', $store->id)
+            ->whereNotNull('sla_clock_started_at')
+            ->whereNotIn('job_status', [JobStatus::Validated->value, JobStatus::Cancelled->value])
+            ->orderByDesc('sla_breached')
+            ->orderByDesc('sla_at_risk')
+            ->orderBy('sla_resolution_target_at')
+            ->get();
+
         return view('stores.show', [
-            'store'         => $store->load('client'),
-            'assets'        => $assets,
-            'assetCount'    => $assetCount,
-            'displayGroups' => $displayGroups,
+            'store'          => $store->load('client'),
+            'assets'         => $assets,
+            'assetCount'     => $assetCount,
+            'displayGroups'  => $displayGroups,
+            'slaTrackedJobs' => $slaTrackedJobs,
         ]);
     }
 

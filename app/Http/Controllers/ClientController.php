@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
+use App\Models\SlaProfile;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -21,7 +23,7 @@ class ClientController extends Controller
     {
         $this->authorize('create', Client::class);
 
-        return view('clients.create');
+        return view('clients.create', ['slaProfiles' => $this->assignableSlaProfiles()]);
     }
 
     public function store(StoreClientRequest $request): RedirectResponse
@@ -37,14 +39,17 @@ class ClientController extends Controller
     {
         $this->authorize('view', $client);
 
-        return view('clients.show', compact('client'));
+        return view('clients.show', ['client' => $client->load('slaProfile')]);
     }
 
     public function edit(Client $client): View
     {
         $this->authorize('update', $client);
 
-        return view('clients.edit', compact('client'));
+        return view('clients.edit', [
+            'client'      => $client,
+            'slaProfiles' => $this->assignableSlaProfiles($client),
+        ]);
     }
 
     public function update(UpdateClientRequest $request, Client $client): RedirectResponse
@@ -65,5 +70,27 @@ class ClientController extends Controller
         return redirect()
             ->route('clients.index')
             ->with('success', "Client '{$client->client_name}' has been deactivated.");
+    }
+
+    /**
+     * Active SLA profiles, plus the client's currently-assigned profile even if it has
+     * since been deactivated — so it doesn't silently disappear from the select and
+     * re-saving the form doesn't spuriously fail validation.
+     *
+     * @return Collection<int, SlaProfile>
+     */
+    private function assignableSlaProfiles(?Client $client = null): Collection
+    {
+        $profiles = SlaProfile::where('is_active', true)->orderBy('name')->get();
+
+        if ($client?->sla_profile_id && ! $profiles->contains('id', $client->sla_profile_id)) {
+            $current = SlaProfile::find($client->sla_profile_id);
+
+            if ($current !== null) {
+                $profiles->push($current);
+            }
+        }
+
+        return $profiles;
     }
 }

@@ -8,11 +8,14 @@ use App\Enums\PhotoType;
 use App\Enums\PostServiceStatus;
 use App\Jobs\WriteAuditLog;
 use App\Models\Asset;
+use App\Models\Client;
 use App\Models\JobAssetOutcome;
 use App\Models\JobCheckpoint;
 use App\Models\JobPhoto;
 use App\Models\ServiceJob;
+use App\Models\Store;
 use App\Models\User;
+use App\Services\Sla\SlaClockService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +36,7 @@ class JobValidationService
     public function __construct(
         private readonly AssetTransitionService $assetTransitionService,
         private readonly JobTransitionService $jobTransitionService,
+        private readonly SlaClockService $slaClockService,
     ) {}
 
     /**
@@ -171,7 +175,12 @@ class JobValidationService
 
         $job->loadMissing('assets');
 
-        $remediation = DB::transaction(function () use ($job, $actor, $reason): ServiceJob {
+        // Remediation jobs are always fault-type — start their own SLA clock (US-12.2).
+        $client    = Client::with('slaProfile')->findOrFail($job->client_id);
+        $store     = Store::findOrFail($job->store_id);
+        $slaFields = $this->slaClockService->resolveClockFields($client, $store);
+
+        $remediation = DB::transaction(function () use ($job, $actor, $reason, $slaFields): ServiceJob {
             $remediation = ServiceJob::create([
                 'job_reference'   => $this->generateRemediationReference($job),
                 'job_name'        => 'Remediation: '.$job->job_name,
@@ -187,6 +196,7 @@ class JobValidationService
                 'job_level'          => $job->job_level + 1,
                 'client_email'       => $job->client_email,
                 'client_name'        => $job->client_name,
+                ...$slaFields,
             ]);
 
             $remediation->assets()->sync($job->assets->pluck('id')->all());

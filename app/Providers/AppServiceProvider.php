@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\PublicHolidayProvider;
+use App\Services\Sla\StaticAuPublicHolidayProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -10,7 +12,11 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        // Config-only swap for a licensed holiday data source later (US-12.2).
+        $this->app->bind(PublicHolidayProvider::class, StaticAuPublicHolidayProvider::class);
+    }
 
     public function boot(): void
     {

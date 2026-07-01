@@ -22,6 +22,7 @@ use App\Models\Store;
 use App\Models\TechnicianProfile;
 use App\Services\AssetTransitionService;
 use App\Services\JobValidationService;
+use App\Services\Sla\SlaClockService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,8 +63,8 @@ class ServiceJobController extends Controller
         $validated = $request->validated();
 
         // Derive client_id server-side — never trusted from request input
-        $store    = Store::findOrFail((int) $validated['store_id']);
-        $clientId = $store->client_id;
+        $store  = Store::findOrFail((int) $validated['store_id']);
+        $client = Client::with('slaProfile')->findOrFail($store->client_id);
 
         // Determine job_level from parent (US-08.5)
         $parentJobId = isset($validated['parent_job_id']) ? (int) $validated['parent_job_id'] : null;
@@ -74,13 +75,18 @@ class ServiceJobController extends Controller
             $jobLevel = $parent->job_level + 1;
         }
 
-        $job = DB::transaction(function () use ($validated, $store, $clientId, $parentJobId, $jobLevel) {
+        // SLA clock starts only for fault jobs against a client with an active profile (US-12.2)
+        $slaFields = $validated['job_type'] === JobType::FaultRepair->value
+            ? app(SlaClockService::class)->resolveClockFields($client, $store)
+            : [];
+
+        $job = DB::transaction(function () use ($validated, $store, $client, $parentJobId, $jobLevel, $slaFields) {
             $job = ServiceJob::create([
                 'job_reference'      => $validated['job_reference'],
                 'job_name'           => $validated['job_name'],
                 'job_description'    => $validated['job_description'],
                 'job_type'           => $validated['job_type'],
-                'client_id'          => $clientId,
+                'client_id'          => $client->id,
                 'store_id'           => $store->id,
                 'job_timezone'       => $store->store_timezone,
                 'scheduled_date'     => $validated['scheduled_date'] ?? null,
@@ -91,6 +97,7 @@ class ServiceJobController extends Controller
                 'job_level'          => $jobLevel,
                 'client_email'       => $validated['client_email'] ?? null,
                 'client_name'        => $validated['client_name']  ?? null,
+                ...$slaFields,
             ]);
 
             // Attach affected assets — auto-transition eligible ones to UnderMaintenance (US-08.2)

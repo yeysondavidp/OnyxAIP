@@ -17,3 +17,8 @@ Schedule::command('backup:application')
 Schedule::command('storage:check-thresholds')
     ->dailyAt('08:00')
     ->withoutOverlapping();
+
+// ── Hourly SLA at-risk/breach recompute (US-12.3) ────────────────────────
+Schedule::command('sla:recompute')
+    ->hourly()
+    ->withoutOverlapping();

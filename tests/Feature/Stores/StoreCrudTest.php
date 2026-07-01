@@ -3,6 +3,8 @@
 use App\Enums\AustralianState;
 use App\Enums\StoreType;
 use App\Models\Client;
+use App\Models\ServiceJob;
+use App\Models\SlaProfile;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -111,6 +113,26 @@ it('pm can view a store dashboard', function () {
         ->get(route('stores.show', $store))
         ->assertOk()
         ->assertSee('Pandora Bondi');
+});
+
+it('store dashboard shows sla status for an open sla-tracked job', function () {
+    $pm      = User::factory()->pm()->create();
+    $profile = SlaProfile::factory()->create();
+    $client  = Client::factory()->create(['sla_profile_id' => $profile->id]);
+    $store   = Store::factory()->create(['client_id' => $client->id]);
+    ServiceJob::factory()->forClient($client, $store)->create([
+        'job_reference'            => 'JOB-SLA-DASH',
+        'sla_profile_id'           => $profile->id,
+        'sla_clock_started_at'     => now()->subHour(),
+        'sla_resolution_target_at' => now()->addHour(),
+        'sla_at_risk_at'           => now()->addMinutes(30),
+    ]);
+
+    $this->actingAs($pm)
+        ->get(route('stores.show', $store))
+        ->assertOk()
+        ->assertSee('JOB-SLA-DASH')
+        ->assertSee('On track');
 });
 
 it('cross-tenant store dashboard is inaccessible', function () {

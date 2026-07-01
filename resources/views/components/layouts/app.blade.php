@@ -38,6 +38,7 @@
             <x-layouts.nav-item route="dashboard" icon="grid">Dashboard</x-layouts.nav-item>
             <x-layouts.nav-item route="clients.index" icon="briefcase">Clients</x-layouts.nav-item>
             <x-layouts.nav-item route="stores.index" icon="map-pin">Stores</x-layouts.nav-item>
+            <x-layouts.nav-item route="sla-profiles.index" icon="shield">SLA Profiles</x-layouts.nav-item>
 
             <div style="padding: var(--space-5) var(--space-5) var(--space-1);">
                 <x-onyx.eyebrow as="span" tone="muted" style="color: var(--onyx-500); font-size: 10px;">Assets</x-onyx.eyebrow>

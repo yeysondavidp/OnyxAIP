@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Client;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreClientRequest extends FormRequest
 {
@@ -20,6 +21,7 @@ class StoreClientRequest extends FormRequest
             'primary_contact' => ['nullable', 'string', 'max:255'],
             'primary_email'   => ['nullable', 'email', 'max:255'],
             'notes'           => ['nullable', 'string', 'max:5000'],
+            'sla_profile_id'  => ['nullable', Rule::exists('sla_profiles', 'id')->where('is_active', true)],
             'is_active'       => ['sometimes', 'boolean'],
         ];
     }

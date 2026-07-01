@@ -9,6 +9,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DisplayGroupController;
 use App\Http\Controllers\LabelSheetController;
 use App\Http\Controllers\ServiceJobController;
+use App\Http\Controllers\SlaProfileController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Technician\JobFlowController;
 use App\Http\Controllers\TechnicianController;
@@ -78,6 +79,7 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
 
     Route::resource('clients', ClientController::class);
+    Route::resource('sla-profiles', SlaProfileController::class);
     Route::resource('stores', StoreController::class);
     Route::resource('assets', AssetController::class);
     Route::resource('jobs', ServiceJobController::class);

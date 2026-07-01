@@ -180,10 +180,26 @@
                 @endif
             </x-onyx.card>
 
-            {{-- SLA status placeholder --}}
+            {{-- SLA Status (§8, US-12.3) --}}
             <x-onyx.card variant="default" padding="md">
                 <h2 style="font-size: var(--fs-14); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-3);">SLA Status</h2>
-                <p style="font-size: var(--fs-13); color: var(--text-muted);">SLA tracking available once service jobs are configured.</p>
+
+                @if ($slaTrackedJobs->isEmpty())
+                    <div style="display: flex; align-items: center; gap: var(--space-2);">
+                        <x-onyx.badge tone="positive" variant="soft">No open SLA-tracked jobs</x-onyx.badge>
+                    </div>
+                @else
+                    <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                        @foreach ($slaTrackedJobs as $job)
+                            <a href="{{ route('jobs.show', $job) }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); text-decoration: none;">
+                                <span style="font-size: var(--fs-13); color: var(--text-primary); font-weight: var(--weight-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    {{ $job->job_reference }}
+                                </span>
+                                <x-onyx.sla-badge :status="$job->slaStatus()" />
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </x-onyx.card>
 
             {{-- Notes --}}

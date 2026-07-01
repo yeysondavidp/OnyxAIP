@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\Auditable;
 use Database\Factories\ClientFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -37,5 +38,11 @@ class Client extends BaseModel
     public function stores(): HasMany
     {
         return $this->hasMany(Store::class);
+    }
+
+    /** @return BelongsTo<SlaProfile, $this> */
+    public function slaProfile(): BelongsTo
+    {
+        return $this->belongsTo(SlaProfile::class);
     }
 }
