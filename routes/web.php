@@ -84,6 +84,9 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
 
     // Job transitions (US-08.3)
     Route::post('/jobs/{job}/invite', [ServiceJobController::class, 'invite'])->name('jobs.invite');
+
+    // Validation review surface + submit (US-11.1)
+    Route::get('/jobs/{job}/validate', [ServiceJobController::class, 'showValidation'])->name('jobs.validate-form');
     Route::post('/jobs/{job}/validate', [ServiceJobController::class, 'validate'])->name('jobs.validate');
     Route::post('/jobs/{job}/flag-remediation', [ServiceJobController::class, 'flagRemediation'])->name('jobs.flag-remediation');
     Route::post('/jobs/{job}/force-complete', [ServiceJobController::class, 'forceComplete'])->name('jobs.force-complete');
@@ -92,6 +95,9 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::post('/jobs/{job}/attachments', [ServiceJobController::class, 'storeAttachment'])->name('jobs.attachments.store');
     Route::get('/jobs/{job}/attachments/{attachment}/download', [ServiceJobController::class, 'downloadAttachment'])->name('jobs.attachments.download');
     Route::delete('/jobs/{job}/attachments/{attachment}', [ServiceJobController::class, 'destroyAttachment'])->name('jobs.attachments.destroy');
+
+    // Before/after job photos — PM review (US-11.1)
+    Route::get('/jobs/{job}/photos/{photo}/download', [ServiceJobController::class, 'downloadPhoto'])->name('jobs.photos.download');
     Route::resource('technicians', TechnicianController::class);
 
     // Invitation send (US-09.2) — rate-limited
@@ -110,6 +116,10 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
         ->name('assets.label');
     Route::post('/assets/labels', [LabelSheetController::class, 'batch'])
         ->name('assets.labels.batch');
+
+    // Service history photo — no public route, scoped to this asset's own history (US-11.3)
+    Route::get('/assets/{asset}/service-history/photo', [AssetController::class, 'downloadHistoryPhoto'])
+        ->name('assets.service-history.photo');
 
     Route::get('/reports', fn () => view('reports.index'))->name('reports.index');
 });

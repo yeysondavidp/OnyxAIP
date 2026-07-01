@@ -5,6 +5,9 @@ namespace App\Models;
 use App\Enums\PhotoType;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property PhotoType $type
+ */
 class JobPhoto extends BaseModel
 {
     protected $table = 'job_photos';

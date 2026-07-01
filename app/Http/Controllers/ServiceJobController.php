@@ -6,20 +6,27 @@ use App\Enums\AssetStatus;
 use App\Enums\EarlyStartWindow;
 use App\Enums\JobStatus;
 use App\Enums\JobType;
+use App\Enums\PhotoType;
+use App\Enums\PostServiceStatus;
 use App\Http\Requests\StoreServiceJobRequest;
 use App\Http\Requests\UpdateServiceJobRequest;
 use App\Http\Requests\UploadJobAttachmentRequest;
 use App\Models\Asset;
 use App\Models\Client;
+use App\Models\JobAssetOutcome;
 use App\Models\JobAttachment;
+use App\Models\JobCheckpoint;
+use App\Models\JobPhoto;
 use App\Models\ServiceJob;
 use App\Models\Store;
 use App\Models\TechnicianProfile;
 use App\Services\AssetTransitionService;
+use App\Services\JobValidationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -186,24 +193,71 @@ class ServiceJobController extends Controller
         return back()->with('success', 'Job invitation sent to assigned technicians.');
     }
 
-    /** PM validates a completed job (Completed → Validated). */
+    /**
+     * Review surface for a Completed job — evidence + per-asset decision form (US-11.1).
+     */
+    public function showValidation(ServiceJob $job): View
+    {
+        $this->authorize('validate', $job);
+
+        $job->load(['store', 'client', 'assets', 'technicians']);
+
+        $checkpoints = JobCheckpoint::where('job_id', $job->id)
+            ->with('profile')
+            ->get();
+
+        $outcomes = JobAssetOutcome::where('job_id', $job->id)->get()->keyBy('asset_id');
+
+        $beforePhotos = JobPhoto::where('job_id', $job->id)->where('type', PhotoType::Before->value)->get();
+        $afterPhotos  = JobPhoto::where('job_id', $job->id)->where('type', PhotoType::After->value)->get();
+
+        $postStatuses = PostServiceStatus::cases();
+
+        return view('service-jobs.validate', compact(
+            'job', 'checkpoints', 'outcomes', 'beforePhotos', 'afterPhotos', 'postStatuses'
+        ));
+    }
+
+    /** PM validates a completed job (Completed → Validated), resolving per-asset outcomes (US-11.1). */
     public function validate(Request $request, ServiceJob $job): RedirectResponse
     {
         $this->authorize('validate', $job);
 
-        $job->transitionTo(JobStatus::Validated, auth()->user());
+        $validated = $request->validate([
+            'decisions'   => ['nullable', 'array'],
+            'decisions.*' => ['string', Rule::enum(PostServiceStatus::class)],
+        ]);
 
-        return back()->with('success', 'Job has been validated.');
+        try {
+            app(JobValidationService::class)->validate($job, auth()->user(), $validated['decisions'] ?? []);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['decisions' => $e->getMessage()]);
+        }
+
+        return redirect()->route('jobs.show', $job)->with('success', 'Job has been validated.');
     }
 
-    /** PM flags a completed job for remediation (Completed → RequiresRemediation). */
-    public function flagRemediation(ServiceJob $job): RedirectResponse
+    /** PM flags a completed job for remediation and spawns the sub-job (US-11.2). */
+    public function flagRemediation(Request $request, ServiceJob $job): RedirectResponse
     {
         $this->authorize('flagRemediation', $job);
 
-        $job->transitionTo(JobStatus::RequiresRemediation, auth()->user());
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ], [
+            'reason.required' => 'A reason is required to flag a job for remediation.',
+        ]);
 
-        return back()->with('success', 'Job flagged for remediation. A sub-job can now be created.');
+        try {
+            $remediation = app(JobValidationService::class)
+                ->flagRemediation($job, auth()->user(), $validated['reason']);
+        } catch (\InvalidArgumentException $e) {
+            return back()->withErrors(['reason' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('jobs.show', $remediation)
+            ->with('success', "Job flagged for remediation. Sub-job '{$remediation->job_reference}' created.");
     }
 
     /** PM force-completes a job (InProgress → Completed) with a mandatory reason. */
@@ -280,27 +334,58 @@ class ServiceJobController extends Controller
         return back()->with('success', 'Attachment removed.');
     }
 
+    /** Serve a before/after job photo for PM review (US-11.1) — no public route, scoped by policy. */
+    public function downloadPhoto(ServiceJob $job, JobPhoto $photo): StreamedResponse
+    {
+        $this->authorize('view', $job);
+
+        abort_if($photo->job_id !== $job->id, 403);
+
+        return Storage::disk('local')->download(
+            $photo->stored_path,
+            $photo->type->value.'-photo-'.$photo->id.'.jpg',
+            ['Content-Type' => $photo->mime_type]
+        );
+    }
+
     // ── Private helpers ────────────────────────────────────────────────────────
 
     /**
      * Sync the affected-assets pivot and auto-transition eligible assets
      * to UnderMaintenance via the AssetTransitionService (US-08.2).
      *
+     * Captures each asset's status_before on the pivot at attach time — the
+     * reference point US-11.1 needs at validation, taken before the auto-
+     * transition below. Preserved across re-syncs on edit (never overwritten
+     * once set) so re-saving the job form doesn't lose the original value.
+     *
      * @param  list<int>  $assetIds
      */
     private function syncAffectedAssets(ServiceJob $job, array $assetIds): void
     {
-        $job->assets()->sync($assetIds);
+        $existingStatusBefore = $job->assets()->pluck('job_assets.status_before', 'assets.id')->toArray();
 
         if (empty($assetIds)) {
+            $job->assets()->sync([]);
+
             return;
         }
 
+        $assets = Asset::whereIn('id', $assetIds)->get(['id', 'asset_status']);
+
+        $syncData = [];
+        foreach ($assets as $asset) {
+            $syncData[$asset->id] = [
+                'status_before' => $existingStatusBefore[$asset->id] ?? $asset->asset_status->value,
+            ];
+        }
+
+        $job->assets()->sync($syncData);
+
         $transitionService = app(AssetTransitionService::class);
 
-        Asset::whereIn('id', $assetIds)
-            ->whereIn('asset_status', [AssetStatus::Active->value, AssetStatus::Faulty->value])
-            ->get()
+        $assets
+            ->filter(fn (Asset $a) => in_array($a->asset_status, [AssetStatus::Active, AssetStatus::Faulty], strict: true))
             ->each(function (Asset $asset) use ($transitionService): void {
                 try {
                     $transitionService->transitionTo(

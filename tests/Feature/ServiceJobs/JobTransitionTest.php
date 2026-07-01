@@ -90,14 +90,26 @@ it('pm can validate a completed job', function () {
     expect($job->fresh()->job_status)->toBe(JobStatus::Validated);
 });
 
-it('pm can flag a completed job for remediation', function () {
+it('pm can flag a completed job for remediation with a reason', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->completed()->create();
+
+    $this->actingAs($pm)
+        ->post(route('jobs.flag-remediation', $job), ['reason' => 'Screen still not powering on.'])
+        ->assertRedirect();
+
+    expect($job->fresh()->job_status)->toBe(JobStatus::RequiresRemediation);
+});
+
+it('flagging remediation without a reason is rejected', function () {
     $pm    = User::factory()->pm()->create();
     $store = Store::factory()->create();
     $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->completed()->create();
 
     $this->actingAs($pm)
         ->post(route('jobs.flag-remediation', $job))
-        ->assertRedirect();
+        ->assertSessionHasErrors('reason');
 
-    expect($job->fresh()->job_status)->toBe(JobStatus::RequiresRemediation);
+    expect($job->fresh()->job_status)->toBe(JobStatus::Completed);
 });

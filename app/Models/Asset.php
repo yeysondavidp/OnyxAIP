@@ -101,6 +101,12 @@ class Asset extends BaseModel
         return $this->hasMany(AssetHistory::class)->orderByDesc('transitioned_at');
     }
 
+    /** Append-only per-job service record log (US-11.3, SRA §7). */
+    public function serviceHistory(): HasMany
+    {
+        return $this->hasMany(ServiceHistory::class)->orderByDesc('service_date')->orderByDesc('id');
+    }
+
     // ── QR code ────────────────────────────────────────────────────────────────
 
     protected static function booted(): void

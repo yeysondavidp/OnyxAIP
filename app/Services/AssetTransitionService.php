@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  *   Active           → Faulty, Offline, Decommissioned
  *   Faulty           → UnderMaintenance, Decommissioned
  *   Offline          → Active, Decommissioned
- *   UnderMaintenance → Active, Decommissioned
+ *   UnderMaintenance → Active, Faulty, Decommissioned
  *   Decommissioned   → (none — terminal)
  *
  * Actor may be:
@@ -31,10 +31,12 @@ class AssetTransitionService
     /** @var array<string, list<string>> permitted target statuses keyed by current status value */
     private const PERMITTED = [
         // SRA §4.5 core transitions + §5.2 job-creation auto-transition (Active → UnderMaintenance)
-        'active'            => ['faulty', 'offline', 'under_maintenance', 'decommissioned'],
-        'faulty'            => ['under_maintenance', 'decommissioned'],
-        'offline'           => ['active', 'decommissioned'],
-        'under_maintenance' => ['active', 'decommissioned'],
+        'active'  => ['faulty', 'offline', 'under_maintenance', 'decommissioned'],
+        'faulty'  => ['under_maintenance', 'decommissioned'],
+        'offline' => ['active', 'decommissioned'],
+        // 'faulty' target added for US-11.1: a validated job can find the fault unresolved
+        // ("Still Faulty" outcome, SRA §6 Screen 4) — the asset stays Faulty, not Active.
+        'under_maintenance' => ['active', 'faulty', 'decommissioned'],
         'decommissioned'    => [],
     ];
 

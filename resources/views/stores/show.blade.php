@@ -114,6 +114,16 @@
                 </div>
             </x-onyx.card>
 
+            {{-- Service History (US-11.4) --}}
+            <x-onyx.card variant="default" padding="none">
+                <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+                    <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary);">Service History</h2>
+                </div>
+                <div style="padding: var(--space-5);">
+                    <livewire:service-history.store-history-log :store="$store" />
+                </div>
+            </x-onyx.card>
+
             {{-- Display Groups (US-05.2) --}}
             <x-onyx.card variant="default" padding="none">
                 <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">

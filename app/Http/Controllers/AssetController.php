@@ -13,8 +13,12 @@ use App\Http\Requests\CreateAssetRequest;
 use App\Http\Requests\UpdateAssetRequest;
 use App\Models\Asset;
 use App\Models\Client;
+use App\Models\ServiceHistory;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssetController extends Controller
 {
@@ -52,7 +56,27 @@ class AssetController extends Controller
         $asset->load(['client', 'store', 'parent']);
         Asset::loadTypeDetails(collect([$asset]));
 
-        return view('assets.show', compact('asset'));
+        $serviceHistory = $asset->serviceHistory()->with('serviceJob')->paginate(10);
+
+        return view('assets.show', compact('asset', 'serviceHistory'));
+    }
+
+    /** Serve a service-history-referenced photo, scoped to this asset's own history rows (US-11.3). */
+    public function downloadHistoryPhoto(Request $request, Asset $asset): StreamedResponse
+    {
+        $this->authorize('view', $asset);
+
+        $path = (string) $request->query('path', '');
+
+        // Only allow paths that appear in this asset's own service_history rows —
+        // prevents path traversal / cross-asset access via a manipulated query string.
+        $allowed = ServiceHistory::where('asset_id', $asset->id)
+            ->get()
+            ->flatMap(fn (ServiceHistory $h) => array_merge($h->before_photo_paths ?? [], $h->after_photo_paths ?? []));
+
+        abort_unless($allowed->contains($path), 403);
+
+        return Storage::disk('local')->download($path);
     }
 
     public function edit(Asset $asset): View

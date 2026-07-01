@@ -26,7 +26,9 @@ enum PostServiceStatus: string
             self::Active         => AssetStatus::Active,
             self::StillFaulty    => AssetStatus::Faulty,
             self::Decommissioned => AssetStatus::Decommissioned,
-            self::Replaced       => AssetStatus::Active, // replaced → new asset active
+            // The physical unit was swapped out — this asset record is retired;
+            // the replacement is registered as a separate asset.
+            self::Replaced => AssetStatus::Decommissioned,
         };
     }
 }

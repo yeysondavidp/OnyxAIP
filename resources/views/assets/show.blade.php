@@ -149,14 +149,61 @@
                 @endif
             @endif
 
-            {{-- Service history placeholder --}}
+            {{-- Service history (US-11.3) --}}
             <x-onyx.card variant="default" padding="none">
                 <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
                     <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary);">Service History</h2>
                 </div>
-                <div style="padding: var(--space-10);">
-                    <x-onyx.empty icon="clock" heading="No service history yet" body="Service records will appear here once jobs have been completed against this asset." size="sm" />
-                </div>
+                @if ($serviceHistory->isEmpty())
+                    <div style="padding: var(--space-10);">
+                        <x-onyx.empty icon="clock" heading="No service history yet" body="Service records will appear here once a job affecting this asset is validated." size="sm" />
+                    </div>
+                @else
+                    <div style="display: flex; flex-direction: column;">
+                        @foreach ($serviceHistory as $entry)
+                            <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                                        <span style="font-size: var(--fs-13); font-weight: var(--weight-semibold); color: var(--text-primary);">{{ $entry->service_date->format('d M Y') }}</span>
+                                        @if ($entry->serviceJob)
+                                            <a href="{{ route('jobs.show', $entry->serviceJob) }}" style="font-family: monospace; font-size: var(--fs-12); color: var(--bronze-600); text-decoration: none;">{{ $entry->serviceJob->job_reference }}</a>
+                                        @endif
+                                        <span style="font-size: var(--fs-12); color: var(--text-secondary);">{{ $entry->job_type->label() }}</span>
+                                    </div>
+                                    <div>
+                                        <x-onyx.badge tone="neutral" variant="soft">{{ $entry->status_before->label() }}</x-onyx.badge>
+                                        <span style="color: var(--text-tertiary); margin: 0 var(--space-1);">→</span>
+                                        <x-onyx.badge :tone="$entry->status_after->tone()" variant="soft">{{ $entry->status_after->label() }}</x-onyx.badge>
+                                    </div>
+                                </div>
+
+                                <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">
+                                    Technician(s): {{ $entry->technicianProfiles()->pluck('name')->implode(', ') ?: '—' }}
+                                </p>
+
+                                @if ($entry->technician_notes)
+                                    <p style="font-size: var(--fs-13); color: var(--text-primary); margin-bottom: var(--space-2);">{{ $entry->technician_notes }}</p>
+                                @endif
+
+                                @if (! empty($entry->before_photo_paths) || ! empty($entry->after_photo_paths))
+                                    <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                                        @foreach (($entry->before_photo_paths ?? []) as $path)
+                                            <a href="{{ route('assets.service-history.photo', ['asset' => $asset, 'path' => $path]) }}" style="font-size: var(--fs-11); color: var(--bronze-600); text-decoration: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 2px 8px;">Before photo</a>
+                                        @endforeach
+                                        @foreach (($entry->after_photo_paths ?? []) as $path)
+                                            <a href="{{ route('assets.service-history.photo', ['asset' => $asset, 'path' => $path]) }}" style="font-size: var(--fs-11); color: var(--bronze-600); text-decoration: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 2px 8px;">After photo</a>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                    @if ($serviceHistory->hasPages())
+                        <div style="padding: var(--space-4) var(--space-6);">
+                            {{ $serviceHistory->links() }}
+                        </div>
+                    @endif
+                @endif
             </x-onyx.card>
 
         </div>

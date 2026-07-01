@@ -93,18 +93,10 @@
                 <x-onyx.card variant="default" padding="lg">
                     <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); margin-bottom: var(--space-3);">Review job</h2>
                     <p style="font-size: var(--fs-13); color: var(--text-secondary); margin-bottom: var(--space-3);">
-                        Validate the job if the work is satisfactory, or flag it for remediation.
+                        Review the captured evidence, resolve each asset's outcome, then validate the job
+                        or flag it for remediation.
                     </p>
-                    <div style="display: flex; gap: var(--space-3);">
-                        <form method="POST" action="{{ route('jobs.validate', $job) }}">
-                            @csrf
-                            <x-onyx.button type="submit" variant="primary">Validate</x-onyx.button>
-                        </form>
-                        <form method="POST" action="{{ route('jobs.flag-remediation', $job) }}">
-                            @csrf
-                            <x-onyx.button type="submit" variant="outline">Flag for remediation</x-onyx.button>
-                        </form>
-                    </div>
+                    <x-onyx.button href="{{ route('jobs.validate-form', $job) }}" variant="primary">Review &amp; validate</x-onyx.button>
                 </x-onyx.card>
             @endif
 

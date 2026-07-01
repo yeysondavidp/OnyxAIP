@@ -81,10 +81,11 @@ class ServiceJob extends BaseModel
         return $this->hasMany(ServiceJob::class, 'parent_job_id');
     }
 
-    /** Affected assets for this job (US-08.2). */
+    /** Affected assets for this job (US-08.2). status_before is captured at attach time (US-11.1). */
     public function assets(): BelongsToMany
     {
-        return $this->belongsToMany(Asset::class, 'job_assets', 'job_id', 'asset_id');
+        return $this->belongsToMany(Asset::class, 'job_assets', 'job_id', 'asset_id')
+            ->withPivot('status_before');
     }
 
     /** Assigned technicians with their per-technician lifecycle (US-08.4/09.1). */
