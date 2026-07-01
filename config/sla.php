@@ -9,10 +9,6 @@ return [
     'business_hours_start' => (int) env('SLA_BUSINESS_HOURS_START', 8),
     'business_hours_end'   => (int) env('SLA_BUSINESS_HOURS_END', 18),
 
-    /*
-     * % of the SLA resolution window elapsed at which a job is flagged
-     * at-risk (before it fully breaches). Config-driven per US-12.3 —
-     * a future US-16.1 Settings screen will expose this without code changes.
-     */
-    'at_risk_threshold_pct' => (int) env('SLA_AT_RISK_THRESHOLD_PERCENT', 80),
+    // At-risk threshold % moved to the platform_settings table (US-16.1) —
+    // see App\Enums\PlatformSettingKey::SlaAtRiskThresholdPct.
 ];

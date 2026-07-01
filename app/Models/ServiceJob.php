@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $sla_clock_started_at
  * @property Carbon|null $sla_resolution_target_at
  * @property Carbon|null $sla_at_risk_at
+ * @property Carbon|null $scheduled_date
  */
 class ServiceJob extends BaseModel
 {
@@ -76,11 +77,13 @@ class ServiceJob extends BaseModel
 
     // ── Relationships ──────────────────────────────────────────────────────────
 
+    /** @return BelongsTo<Client, $this> */
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
+    /** @return BelongsTo<Store, $this> */
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);

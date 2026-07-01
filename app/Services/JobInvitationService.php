@@ -2,13 +2,18 @@
 
 namespace App\Services;
 
+use App\Enums\EmailTemplateSlot;
 use App\Enums\JobStatus;
 use App\Enums\TechnicianJobStatus;
 use App\Jobs\WriteAuditLog;
+use App\Mail\EmailTemplateMail;
 use App\Mail\JobInvitationMail;
+use App\Models\EmailTemplate;
 use App\Models\ServiceJob;
 use App\Models\TechnicianProfile;
 use App\Models\User;
+use App\Services\Emails\EmailTemplateRenderer;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -32,6 +37,7 @@ class JobInvitationService
 
     public function __construct(
         private readonly TechnicianUrlService $urlService,
+        private readonly EmailTemplateRenderer $renderer,
     ) {}
 
     /**
@@ -86,8 +92,8 @@ class JobInvitationService
         // Generate the signed URL (embeds profile_id + token for validation)
         $signedUrl = $this->urlService->generateForProfile($job->id, $profile->id, $token, self::TTL_HOURS);
 
-        // Dispatch queued email
-        Mail::to($profile->email)->queue(new JobInvitationMail($job, $profile, $signedUrl));
+        // Dispatch queued email — default path unless a PM has customised this slot (US-16.2)
+        $this->sendInvitationEmail($job, $profile, $signedUrl);
 
         WriteAuditLog::dispatch(
             userId: $invitedBy->id,
@@ -100,6 +106,65 @@ class JobInvitationService
             ipAddress: request()->ip(),
             userAgent: request()->userAgent(),
         );
+    }
+
+    /**
+     * Send the default JobInvitationMail unless a PM has saved a custom template for the
+     * JobInvitation slot (US-16.2) — the default path is unchanged from before US-16.2 existed.
+     */
+    private function sendInvitationEmail(ServiceJob $job, TechnicianProfile $profile, string $signedUrl): void
+    {
+        $hasCustomTemplate = EmailTemplate::where('slot', EmailTemplateSlot::JobInvitation->value)
+            ->whereNotNull('subject')
+            ->exists();
+
+        if (! $hasCustomTemplate) {
+            Mail::to($profile->email)->queue(new JobInvitationMail($job, $profile, $signedUrl));
+
+            return;
+        }
+
+        $rendered = $this->renderer->render(
+            EmailTemplateSlot::JobInvitation,
+            $this->invitationVariables($job->loadMissing('store'), $profile, $signedUrl),
+        );
+
+        Mail::to($profile->email)->queue(new EmailTemplateMail(
+            subjectLine: $rendered['subject'],
+            renderedBody: $rendered['body'],
+            ctaUrl: $signedUrl,
+            ctaLabel: 'View job & respond',
+        ));
+    }
+
+    /** @return array<string, string> */
+    private function invitationVariables(ServiceJob $job, TechnicianProfile $profile, string $signedUrl): array
+    {
+        $scheduledDate = '';
+
+        if ($job->scheduled_date) {
+            $dt = Carbon::parse(
+                $job->scheduled_date->format('Y-m-d').($job->scheduled_time ? ' '.$job->scheduled_time : ''),
+                'UTC',
+            )->setTimezone($job->job_timezone);
+
+            $scheduledDate = $dt->format('l, d F Y');
+
+            if ($job->scheduled_time) {
+                $scheduledDate .= ' at '.$dt->format('g:i A').' ('.$job->job_timezone.')';
+            }
+        }
+
+        return [
+            'technician_name' => $profile->name,
+            'job_reference'   => $job->job_reference,
+            'job_name'        => $job->job_name,
+            // store_id is a NOT NULL FK (§3.2) — every job has exactly one store.
+            'store_name'     => $job->store->store_name,
+            'store_address'  => trim($job->store->address_line1.', '.$job->store->suburb.' '.$job->store->state->value),
+            'scheduled_date' => $scheduledDate,
+            'signed_url'     => $signedUrl,
+        ];
     }
 
     /**

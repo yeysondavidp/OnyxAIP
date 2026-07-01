@@ -7,8 +7,10 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DisplayGroupController;
+use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\LabelSheetController;
 use App\Http\Controllers\ServiceJobController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SlaProfileController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Technician\JobFlowController;
@@ -124,6 +126,16 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
         ->name('assets.service-history.photo');
 
     Route::get('/reports', fn () => view('reports.index'))->name('reports.index');
+
+    // Settings (US-16.1)
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::patch('/settings', [SettingsController::class, 'update'])->name('settings.update');
+
+    // Email templates (US-16.2)
+    Route::get('/settings/email-templates', [EmailTemplateController::class, 'index'])->name('email-templates.index');
+    Route::get('/settings/email-templates/{slot}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
+    Route::patch('/settings/email-templates/{slot}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
+    Route::get('/settings/email-templates/{slot}/preview', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
 });
 
 /*

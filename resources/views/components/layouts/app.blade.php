@@ -59,6 +59,12 @@
 
             <x-layouts.nav-item route="reports.index" icon="bar-chart-2">Reports</x-layouts.nav-item>
 
+            <div style="padding: var(--space-5) var(--space-5) var(--space-1);">
+                <x-onyx.eyebrow as="span" tone="muted" style="color: var(--onyx-500); font-size: 10px;">Admin</x-onyx.eyebrow>
+            </div>
+
+            <x-layouts.nav-item route="settings.edit" icon="settings">Settings</x-layouts.nav-item>
+
         </nav>
 
         {{-- User block --}}

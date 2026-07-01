@@ -2,9 +2,11 @@
 
 namespace App\Services\Sla;
 
+use App\Enums\PlatformSettingKey;
 use App\Enums\SlaStatus;
 use App\Models\Client;
 use App\Models\Store;
+use App\Services\Settings\PlatformSettings;
 use Carbon\CarbonImmutable;
 
 /**
@@ -20,7 +22,10 @@ use Carbon\CarbonImmutable;
  */
 class SlaClockService
 {
-    public function __construct(private readonly BusinessHoursCalculator $calculator) {}
+    public function __construct(
+        private readonly BusinessHoursCalculator $calculator,
+        private readonly PlatformSettings $settings,
+    ) {}
 
     /**
      * @return array<string, mixed> sla_profile_id / sla_clock_started_at /
@@ -49,7 +54,7 @@ class SlaClockService
             $store->store_timezone,
         );
 
-        $thresholdPct = max(0, min(100, (int) config('sla.at_risk_threshold_pct', 80)));
+        $thresholdPct = max(0, min(100, (int) $this->settings->get(PlatformSettingKey::SlaAtRiskThresholdPct->value, 80)));
         $atRiskAt     = $startedAt->addSeconds(
             (int) round($startedAt->diffInSeconds($targetAt) * ($thresholdPct / 100))
         );
