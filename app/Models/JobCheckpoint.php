@@ -3,7 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $job_id
+ * @property int $technician_profile_id
+ * @property Carbon|null $start_timestamp_utc
+ * @property Carbon|null $end_timestamp_utc
+ */
 class JobCheckpoint extends BaseModel
 {
     protected $table = 'job_checkpoints';
@@ -34,11 +41,13 @@ class JobCheckpoint extends BaseModel
         ];
     }
 
+    /** @return BelongsTo<ServiceJob, $this> */
     public function job(): BelongsTo
     {
         return $this->belongsTo(ServiceJob::class, 'job_id');
     }
 
+    /** @return BelongsTo<TechnicianProfile, $this> */
     public function profile(): BelongsTo
     {
         return $this->belongsTo(TechnicianProfile::class, 'technician_profile_id');

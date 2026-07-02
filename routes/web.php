@@ -9,6 +9,16 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DisplayGroupController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\LabelSheetController;
+use App\Http\Controllers\Reports\AssetRegisterReportController;
+use App\Http\Controllers\Reports\DisplayGroupTopologyReportController;
+use App\Http\Controllers\Reports\OpenFaultsReportController;
+use App\Http\Controllers\Reports\ReportDownloadController;
+use App\Http\Controllers\Reports\ReportPhotoController;
+use App\Http\Controllers\Reports\ReportsIndexController;
+use App\Http\Controllers\Reports\ServiceHistoryReportController;
+use App\Http\Controllers\Reports\SlaComplianceReportController;
+use App\Http\Controllers\Reports\TechnicianHoursReportController;
+use App\Http\Controllers\Reports\WarrantyForecastReportController;
 use App\Http\Controllers\ServiceJobController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SlaProfileController;
@@ -125,7 +135,31 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::get('/assets/{asset}/service-history/photo', [AssetController::class, 'downloadHistoryPhoto'])
         ->name('assets.service-history.photo');
 
-    Route::get('/reports', fn () => view('reports.index'))->name('reports.index');
+    // Reports (EPIC-14)
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportsIndexController::class, 'index'])->name('index');
+
+        Route::get('/asset-register', [AssetRegisterReportController::class, 'create'])->name('asset-register.create');
+        Route::post('/asset-register', [AssetRegisterReportController::class, 'store'])->name('asset-register.store');
+
+        Route::get('/service-history', [ServiceHistoryReportController::class, 'create'])->name('service-history.create');
+        Route::post('/service-history', [ServiceHistoryReportController::class, 'store'])->name('service-history.store');
+
+        Route::get('/open-faults', [OpenFaultsReportController::class, 'create'])->name('open-faults.create');
+        Route::post('/open-faults', [OpenFaultsReportController::class, 'store'])->name('open-faults.store');
+
+        Route::get('/sla-compliance', [SlaComplianceReportController::class, 'create'])->name('sla-compliance.create');
+        Route::post('/sla-compliance', [SlaComplianceReportController::class, 'store'])->name('sla-compliance.store');
+
+        Route::get('/technician-hours', [TechnicianHoursReportController::class, 'create'])->name('technician-hours.create');
+        Route::post('/technician-hours', [TechnicianHoursReportController::class, 'store'])->name('technician-hours.store');
+
+        Route::get('/warranty-forecast', [WarrantyForecastReportController::class, 'create'])->name('warranty-forecast.create');
+        Route::post('/warranty-forecast', [WarrantyForecastReportController::class, 'store'])->name('warranty-forecast.store');
+
+        Route::get('/display-group-topology', [DisplayGroupTopologyReportController::class, 'create'])->name('display-group-topology.create');
+        Route::post('/display-group-topology', [DisplayGroupTopologyReportController::class, 'store'])->name('display-group-topology.store');
+    });
 
     // Settings (US-16.1)
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
@@ -157,6 +191,20 @@ Route::get('/qr/{assetCode}', [AssetQrController::class, 'lookup'])
     ->middleware('throttle:qr.lookup')
     ->name('assets.qr.lookup')
     ->where('assetCode', '[A-Za-z0-9\-_]{1,40}');
+
+/*
+|--------------------------------------------------------------------------
+| Report downloads (EPIC-14) — signed-URL-only, no auth middleware.
+| The signature is the sole guard; there is no authenticated fallback path.
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['signed', 'throttle:report.download'])->group(function () {
+    Route::get('/reports/download/{reportExport}', [ReportDownloadController::class, 'show'])
+        ->name('reports.download');
+
+    Route::get('/reports/photo/{serviceHistory}', [ReportPhotoController::class, 'show'])
+        ->name('reports.photo.show');
+});
 
 Route::middleware(['signed', 'throttle:guest.job'])->group(function () {
     // Accept/Decline invitation response (US-09.3)

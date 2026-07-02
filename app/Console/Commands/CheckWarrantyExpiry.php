@@ -7,6 +7,7 @@ use App\Enums\PlatformSettingKey;
 use App\Models\Asset;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Settings\PlatformSettings;
+use App\Support\DurationCalculator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -42,7 +43,7 @@ class CheckWarrantyExpiry extends Command
         $sent = 0;
 
         foreach ($assets as $asset) {
-            $daysRemaining = (int) $today->diffInDays($asset->warranty_expiry, false);
+            $daysRemaining = DurationCalculator::daysUntil($today, $asset->warranty_expiry);
 
             if ($daysRemaining < 0) {
                 continue; // already expired — not an "approaching" notification

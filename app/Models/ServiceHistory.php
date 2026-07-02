@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 
 /**
  * Append-only per-asset service record written on job validation (US-11.1, SRA §7).
@@ -15,9 +17,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Never updated or deleted at the application layer — same pattern as AssetHistory
  * and the audit log (US-00.5). Only ServiceHistory::create() may add rows; this
  * model is the single writer contract reused by reporting (EPIC-14).
+ *
+ * @property Carbon $service_date
+ * @property list<int> $technician_profile_ids
+ * @property JobType $job_type
+ * @property AssetStatus $status_before
+ * @property AssetStatus $status_after
+ * @property list<string>|null $before_photo_paths
+ * @property list<string>|null $after_photo_paths
  */
 class ServiceHistory extends Model
 {
+    /** Not persisted — set by EPIC-14 report builders to avoid N+1 technician lookups. */
+    public ?string $technicianNames = null;
+
+    /** Not persisted — set by EPIC-14 report builders (list of signed photo links). */
+    public ?SupportCollection $photoLinks = null;
+
     protected $table = 'service_history';
 
     public $timestamps = false;
@@ -50,11 +66,13 @@ class ServiceHistory extends Model
         ];
     }
 
+    /** @return BelongsTo<Asset, $this> */
     public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class);
     }
 
+    /** @return BelongsTo<ServiceJob, $this> */
     public function serviceJob(): BelongsTo
     {
         return $this->belongsTo(ServiceJob::class, 'service_job_id');

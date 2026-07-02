@@ -6,6 +6,7 @@ use App\Enums\AssetStatus;
 use App\Enums\EmailTemplateSlot;
 use App\Enums\UserRole;
 use App\Models\Asset;
+use App\Models\ReportExport;
 use App\Models\ServiceJob;
 use App\Models\TechnicianProfile;
 use App\Models\User;
@@ -13,6 +14,7 @@ use App\Notifications\PmNotification;
 use App\Notifications\TechnicianNotification;
 use App\Support\JobScheduleFormatter;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 
 /**
  * The single reusable service that dispatches every notification type in the
@@ -100,6 +102,30 @@ class NotificationDispatcher
             'expiry_date'    => $asset->warranty_expiry?->format('d/m/Y') ?? '',
             'days_remaining' => (string) $daysRemaining,
         ], route('assets.show', $asset));
+    }
+
+    /**
+     * Notifies only the PM who requested the report (EPIC-14) — deliberately
+     * not notifyPms(): a report another PM didn't ask for shouldn't land in
+     * their inbox, unlike every other PM notification in this class which is
+     * platform-wide by design.
+     */
+    public function reportReady(ReportExport $export, User $requestedBy): void
+    {
+        $export->loadMissing('client');
+
+        $downloadUrl = URL::temporarySignedRoute(
+            'reports.download',
+            $export->expires_at,
+            ['reportExport' => $export->id],
+        );
+
+        Notification::send($requestedBy, new PmNotification(EmailTemplateSlot::ReportReady, [
+            'report_type'  => $export->report_type->label(),
+            'client_name'  => $export->client === null ? '' : ' for '.$export->client->client_name,
+            'download_url' => $downloadUrl,
+            'expires_at'   => $export->expires_at->timezone('Australia/Sydney')->format('l j F Y \a\t g:ia T'),
+        ], $downloadUrl));
     }
 
     // ── Technician notifications (US-13.4) ──────────────────────────────────────

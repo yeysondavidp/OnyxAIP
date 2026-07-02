@@ -42,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
      *   guest.job      60 req/min per IP            — technician flow (~1/sec steady)
      *   photo.upload   10 uploads/min per IP        — large-payload abuse
      *   qr.lookup      30 req/min per IP            — QR redirect spam
+     *   report.download 30 req/min per IP           — signed report/photo download abuse
      */
     private function configureRateLimiters(): void
     {
@@ -70,6 +71,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('qr.lookup', function (Request $request) {
+            return Limit::perMinute(30)->by($request->ip());
+        });
+
+        RateLimiter::for('report.download', function (Request $request) {
             return Limit::perMinute(30)->by($request->ip());
         });
 

@@ -62,9 +62,11 @@ trait ClientScoped
      *
      * Use sparingly (e.g. migration helpers, super-admin tools).
      * Never call this from a controller handling a client_user request.
+     *
+     * @return Builder<static>
      */
     public static function allClients(): Builder
     {
-        return static::withoutGlobalScope(ClientScope::class);
+        return static::query()->withoutGlobalScope(ClientScope::class);
     }
 }

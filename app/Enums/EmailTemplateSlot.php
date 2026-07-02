@@ -24,6 +24,7 @@ enum EmailTemplateSlot: string
     case PmSlaWarning                = 'pm_sla_warning';
     case PmSlaBreached               = 'pm_sla_breached';
     case PmWarrantyExpiryApproaching = 'pm_warranty_expiry_approaching';
+    case ReportReady                 = 'pm_report_ready';
 
     public function label(): string
     {
@@ -280,6 +281,27 @@ enum EmailTemplateSlot: string
                     'expiry_date'    => '15/07/2026',
                     'days_remaining' => '30',
                     'asset_url'      => 'https://aip.onyxvisual.com.au/assets/1',
+                ],
+            ],
+
+            self::ReportReady => [
+                'label'     => 'PM — report ready',
+                'variables' => [
+                    'report_type'  => 'The report that was generated',
+                    'client_name'  => 'Client name (blank for non-client-scoped reports)',
+                    'download_url' => 'Signed download link (expires)',
+                    'expires_at'   => 'When the download link expires',
+                ],
+                'required' => ['download_url'],
+                'subject'  => 'Your report is ready: {{report_type}}',
+                'body'     => "Your {{report_type}} report{{client_name}} is ready to download.\n\n"
+                    ."Download: {{download_url}}\n"
+                    .'This link expires {{expires_at}}.',
+                'dummy' => [
+                    'report_type'  => 'Asset Register',
+                    'client_name'  => ' for Pandora ANZ',
+                    'download_url' => 'https://aip.onyxvisual.com.au/reports/download/42?signature=abc',
+                    'expires_at'   => 'Friday 4 July 2026 at 9:00 am AEST',
                 ],
             ],
         };

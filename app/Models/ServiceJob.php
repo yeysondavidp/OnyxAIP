@@ -89,7 +89,11 @@ class ServiceJob extends BaseModel
         return $this->belongsTo(Store::class);
     }
 
-    /** Snapshot of the profile in effect when the SLA clock started (US-12.2). */
+    /**
+     * Snapshot of the profile in effect when the SLA clock started (US-12.2).
+     *
+     * @return BelongsTo<SlaProfile, $this>
+     */
     public function slaProfile(): BelongsTo
     {
         return $this->belongsTo(SlaProfile::class);

@@ -19,7 +19,12 @@ use Illuminate\Support\Facades\DB;
 /**
  * @property AssetType $asset_type
  * @property AssetStatus $asset_status
+ * @property Carbon|null $purchase_date
  * @property Carbon|null $warranty_expiry
+ * @property Carbon|null $install_date
+ * @property string|null $last_service_date not a column — populated by EPIC-14's Open Faults report via a correlated subquery
+ * @property string|null $open_job_reference not a column — populated by EPIC-14's Open Faults report via a correlated subquery
+ * @property int $total not a column — populated by EPIC-14's Asset Status Summary report's raw COUNT(*) alias
  */
 class Asset extends BaseModel
 {
@@ -105,7 +110,11 @@ class Asset extends BaseModel
         return $this->hasMany(AssetHistory::class)->orderByDesc('transitioned_at');
     }
 
-    /** Append-only per-job service record log (US-11.3, SRA §7). */
+    /**
+     * Append-only per-job service record log (US-11.3, SRA §7).
+     *
+     * @return HasMany<ServiceHistory, $this>
+     */
     public function serviceHistory(): HasMany
     {
         return $this->hasMany(ServiceHistory::class)->orderByDesc('service_date')->orderByDesc('id');

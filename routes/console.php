@@ -37,3 +37,8 @@ Schedule::command('technicians:send-reminders')
 Schedule::command('technicians:send-link-expiry-warnings')
     ->hourly()
     ->withoutOverlapping();
+
+// ── Daily expired-report cleanup at 03:00 (EPIC-14) ──────────────────────
+Schedule::command('reports:prune')
+    ->dailyAt('03:00')
+    ->withoutOverlapping();
