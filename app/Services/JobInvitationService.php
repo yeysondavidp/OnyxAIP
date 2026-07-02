@@ -13,7 +13,7 @@ use App\Models\ServiceJob;
 use App\Models\TechnicianProfile;
 use App\Models\User;
 use App\Services\Emails\EmailTemplateRenderer;
-use Illuminate\Support\Carbon;
+use App\Support\JobScheduleFormatter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -140,21 +140,6 @@ class JobInvitationService
     /** @return array<string, string> */
     private function invitationVariables(ServiceJob $job, TechnicianProfile $profile, string $signedUrl): array
     {
-        $scheduledDate = '';
-
-        if ($job->scheduled_date) {
-            $dt = Carbon::parse(
-                $job->scheduled_date->format('Y-m-d').($job->scheduled_time ? ' '.$job->scheduled_time : ''),
-                'UTC',
-            )->setTimezone($job->job_timezone);
-
-            $scheduledDate = $dt->format('l, d F Y');
-
-            if ($job->scheduled_time) {
-                $scheduledDate .= ' at '.$dt->format('g:i A').' ('.$job->job_timezone.')';
-            }
-        }
-
         return [
             'technician_name' => $profile->name,
             'job_reference'   => $job->job_reference,
@@ -162,7 +147,7 @@ class JobInvitationService
             // store_id is a NOT NULL FK (§3.2) — every job has exactly one store.
             'store_name'     => $job->store->store_name,
             'store_address'  => trim($job->store->address_line1.', '.$job->store->suburb.' '.$job->store->state->value),
-            'scheduled_date' => $scheduledDate,
+            'scheduled_date' => JobScheduleFormatter::format($job),
             'signed_url'     => $signedUrl,
         ];
     }

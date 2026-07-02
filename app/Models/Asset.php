@@ -12,12 +12,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
  * @property AssetType $asset_type
  * @property AssetStatus $asset_status
+ * @property Carbon|null $warranty_expiry
  */
 class Asset extends BaseModel
 {
@@ -56,11 +58,13 @@ class Asset extends BaseModel
 
     // ── Relationships ──────────────────────────────────────────────────────────
 
+    /** @return BelongsTo<Client, $this> */
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
+    /** @return BelongsTo<Store, $this> */
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);

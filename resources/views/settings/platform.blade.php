@@ -82,6 +82,36 @@
                         required
                     />
 
+                    <x-onyx.divider />
+
+                    <x-onyx.input
+                        name="link_expiry_warning_hours"
+                        label="Link-expiry warning timing (hours before link expires)"
+                        type="number"
+                        min="1"
+                        max="72"
+                        :value="old('link_expiry_warning_hours', $values['link_expiry_warning_hours'])"
+                        :error="$errors->first('link_expiry_warning_hours')"
+                        helper="Hours before a technician's job link expires that they receive a renewal warning."
+                        required
+                    />
+
+                    <x-onyx.divider />
+
+                    <div class="onyx-field">
+                        <label class="onyx-field__label">Notification preferences</label>
+                        <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2);">
+                            @foreach ($pmNotificationSlots as $slot)
+                                @php $checked = is_array(old('enabled_notification_types')) ? in_array($slot->value, old('enabled_notification_types'), true) : ! in_array($slot->value, $disabledSlotValues, true); @endphp
+                                <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-14); color: var(--text-primary); cursor: pointer;">
+                                    <input type="checkbox" name="enabled_notification_types[]" value="{{ $slot->value }}" @checked($checked) style="width: 16px; height: 16px; cursor: pointer;">
+                                    {{ $slot->label() }}
+                                </label>
+                            @endforeach
+                        </div>
+                        <span class="onyx-field__hint">Untick a type to stop sending it — in-app and email both.</span>
+                    </div>
+
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">

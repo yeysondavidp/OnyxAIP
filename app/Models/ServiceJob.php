@@ -112,7 +112,11 @@ class ServiceJob extends BaseModel
             ->withPivot('status_before');
     }
 
-    /** Assigned technicians with their per-technician lifecycle (US-08.4/09.1). */
+    /**
+     * Assigned technicians with their per-technician lifecycle (US-08.4/09.1).
+     *
+     * @return BelongsToMany<TechnicianProfile, $this>
+     */
     public function technicians(): BelongsToMany
     {
         return $this->belongsToMany(

@@ -22,3 +22,18 @@ Schedule::command('storage:check-thresholds')
 Schedule::command('sla:recompute')
     ->hourly()
     ->withoutOverlapping();
+
+// ── Daily warranty-expiry check at 08:00 (US-13.3) ───────────────────────
+Schedule::command('warranty:check-expiry')
+    ->dailyAt('08:00')
+    ->withoutOverlapping();
+
+// ── Technician reminders + link-expiry warnings (US-13.4) ────────────────
+// Hourly — reminder/warning windows are hours-based, not daily.
+Schedule::command('technicians:send-reminders')
+    ->hourly()
+    ->withoutOverlapping();
+
+Schedule::command('technicians:send-link-expiry-warnings')
+    ->hourly()
+    ->withoutOverlapping();

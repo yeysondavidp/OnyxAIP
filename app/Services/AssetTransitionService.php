@@ -7,6 +7,7 @@ use App\Jobs\WriteAuditLog;
 use App\Models\Asset;
 use App\Models\AssetHistory;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -28,6 +29,8 @@ use Illuminate\Support\Facades\DB;
  */
 class AssetTransitionService
 {
+    public function __construct(private readonly NotificationDispatcher $notifications) {}
+
     /** @var array<string, list<string>> permitted target statuses keyed by current status value */
     private const PERMITTED = [
         // SRA §4.5 core transitions + §5.2 job-creation auto-transition (Active → UnderMaintenance)
@@ -101,6 +104,15 @@ class AssetTransitionService
             ipAddress: request()->ip(),
             userAgent: request()->userAgent(),
         );
+
+        // PM notifications (US-13.1): any status change, plus a distinct "new fault"
+        // signal when the asset becomes Faulty (technician in-flow update or a
+        // "Still Faulty" outcome applied at job validation).
+        $this->notifications->assetStatusChanged($asset, $current, $newStatus);
+
+        if ($newStatus === AssetStatus::Faulty) {
+            $this->notifications->newFaultReported($asset);
+        }
     }
 
     public function isPermitted(AssetStatus $from, AssetStatus $to): bool

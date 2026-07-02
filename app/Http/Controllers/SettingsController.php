@@ -24,9 +24,11 @@ class SettingsController extends Controller
         }
 
         return view('settings.platform', [
-            'settingKeys'       => PlatformSettingKey::cases(),
-            'values'            => $values,
-            'earlyStartWindows' => EarlyStartWindow::cases(),
+            'settingKeys'         => PlatformSettingKey::cases(),
+            'values'              => $values,
+            'earlyStartWindows'   => EarlyStartWindow::cases(),
+            'pmNotificationSlots' => UpdateSettingsRequest::PM_NOTIFICATION_SLOTS,
+            'disabledSlotValues'  => $values[PlatformSettingKey::DisabledNotificationTypes->value],
         ]);
     }
 
@@ -34,12 +36,18 @@ class SettingsController extends Controller
     {
         $validated = $request->validated();
 
+        $enabled    = $validated['enabled_notification_types'] ?? [];
+        $allPmSlots = array_map(fn ($s) => $s->value, UpdateSettingsRequest::PM_NOTIFICATION_SLOTS);
+        $disabled   = array_values(array_diff($allPmSlots, $enabled));
+
         /** @var array<string, mixed> $newValues */
         $newValues = [
-            PlatformSettingKey::SlaAtRiskThresholdPct->value   => (int) $validated['sla_at_risk_threshold_pct'],
-            PlatformSettingKey::DefaultEarlyStartWindow->value => $validated['default_early_start_window'],
-            PlatformSettingKey::WarrantyAlertDays->value       => array_values(array_map('intval', $validated['warranty_alert_days'])),
-            PlatformSettingKey::TechnicianReminderHours->value => (int) $validated['technician_reminder_hours'],
+            PlatformSettingKey::SlaAtRiskThresholdPct->value     => (int) $validated['sla_at_risk_threshold_pct'],
+            PlatformSettingKey::DefaultEarlyStartWindow->value   => $validated['default_early_start_window'],
+            PlatformSettingKey::WarrantyAlertDays->value         => array_values(array_map('intval', $validated['warranty_alert_days'])),
+            PlatformSettingKey::TechnicianReminderHours->value   => (int) $validated['technician_reminder_hours'],
+            PlatformSettingKey::LinkExpiryWarningHours->value    => (int) $validated['link_expiry_warning_hours'],
+            PlatformSettingKey::DisabledNotificationTypes->value => $disabled,
         ];
 
         $actor = $request->user();

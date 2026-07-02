@@ -8,8 +8,13 @@ use Database\Factories\TechnicianProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property-read Pivot|null $pivot Present when loaded via ServiceJob::technicians()
+ *   (technician_status, invitation_token, token_expires_at, force_complete_reason).
+ */
 class TechnicianProfile extends BaseModel
 {
     /** @use HasFactory<TechnicianProfileFactory> */

@@ -14,6 +14,7 @@ use App\Http\Requests\UpdateAssetRequest;
 use App\Models\Asset;
 use App\Models\Client;
 use App\Models\ServiceHistory;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssetController extends Controller
 {
+    public function __construct(private readonly NotificationDispatcher $notifications) {}
+
     public function index(): View
     {
         $this->authorize('viewAny', Asset::class);
@@ -94,7 +97,20 @@ class AssetController extends Controller
 
         [$baseData, $detailData] = $this->splitValidated($validated);
 
+        $statusBefore = $asset->asset_status;
+
         $asset->updateWithDetail($baseData, $detailData);
+
+        // This edit form writes asset_status directly, bypassing AssetTransitionService's
+        // own notification dispatch (see NotificationDispatcher docblock) — fire it here
+        // explicitly for this one write path only when the status actually changed.
+        if ($asset->wasChanged('asset_status')) {
+            $this->notifications->assetStatusChanged($asset, $statusBefore, $asset->asset_status);
+
+            if ($asset->asset_status === AssetStatus::Faulty) {
+                $this->notifications->newFaultReported($asset);
+            }
+        }
 
         return redirect()
             ->route('assets.show', $asset)
@@ -105,7 +121,13 @@ class AssetController extends Controller
     {
         $this->authorize('delete', $asset);
 
+        $statusBefore = $asset->asset_status;
+
         $asset->update(['asset_status' => AssetStatus::Decommissioned]);
+
+        if ($asset->wasChanged('asset_status')) {
+            $this->notifications->assetStatusChanged($asset, $statusBefore, $asset->asset_status);
+        }
 
         return redirect()
             ->route('assets.index')

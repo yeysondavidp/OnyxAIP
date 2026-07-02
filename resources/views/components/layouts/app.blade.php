@@ -107,11 +107,13 @@
                     @endisset
                 </div>
 
-                @isset($headerActions)
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                <div style="display: flex; align-items: center; gap: var(--space-3);">
+                    @isset($headerActions)
                         {{ $headerActions }}
-                    </div>
-                @endisset
+                    @endisset
+
+                    <livewire:notifications.notification-bell />
+                </div>
 
             </div>
         </header>

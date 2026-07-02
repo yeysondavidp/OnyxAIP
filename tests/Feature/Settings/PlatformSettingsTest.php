@@ -1,8 +1,10 @@
 <?php
 
 use App\Enums\EarlyStartWindow;
+use App\Enums\EmailTemplateSlot;
 use App\Enums\JobType;
 use App\Enums\PlatformSettingKey;
+use App\Http\Requests\UpdateSettingsRequest;
 use App\Models\Client;
 use App\Models\ServiceJob;
 use App\Models\SlaProfile;
@@ -21,6 +23,8 @@ function validSettingsPayload(array $overrides = []): array
         'default_early_start_window' => EarlyStartWindow::OneHour->value,
         'warranty_alert_days'        => [30, 90],
         'technician_reminder_hours'  => 12,
+        'link_expiry_warning_hours'  => 4,
+        'enabled_notification_types' => array_map(fn ($s) => $s->value, UpdateSettingsRequest::PM_NOTIFICATION_SLOTS),
     ], $overrides);
 }
 
@@ -58,6 +62,24 @@ it('pm can save valid settings', function () {
     expect($settings->get(PlatformSettingKey::DefaultEarlyStartWindow->value))->toBe(EarlyStartWindow::OneHour->value);
     expect($settings->get(PlatformSettingKey::WarrantyAlertDays->value))->toBe([30, 90]);
     expect($settings->get(PlatformSettingKey::TechnicianReminderHours->value))->toBe(12);
+    expect($settings->get(PlatformSettingKey::LinkExpiryWarningHours->value))->toBe(4);
+    expect($settings->get(PlatformSettingKey::DisabledNotificationTypes->value))->toBe([]);
+});
+
+it('unticking a notification type disables it', function () {
+    $pm = User::factory()->pm()->create();
+
+    $enabled = array_values(array_diff(
+        array_map(fn ($s) => $s->value, UpdateSettingsRequest::PM_NOTIFICATION_SLOTS),
+        [EmailTemplateSlot::PmSlaBreached->value],
+    ));
+
+    $this->actingAs($pm)->patch(route('settings.update'), validSettingsPayload([
+        'enabled_notification_types' => $enabled,
+    ]));
+
+    expect(app(PlatformSettings::class)->get(PlatformSettingKey::DisabledNotificationTypes->value))
+        ->toBe([EmailTemplateSlot::PmSlaBreached->value]);
 });
 
 it('rejects an sla threshold outside 1-99', function () {
@@ -105,13 +127,15 @@ it('writes one audit entry per changed key and none for unchanged keys', functio
 
     $settingsAuditCount = fn () => DB::table('audit_logs')->where('action', 'settings.updated')->count();
 
-    // First save establishes a baseline (every key changes from its default).
+    // First save establishes a baseline (every key changes from its default,
+    // except disabled_notification_types — the payload enables everything,
+    // which already matches the empty-disabled-list default).
     $this->actingAs($pm)->patch(route('settings.update'), validSettingsPayload());
-    expect($settingsAuditCount())->toBe(4);
+    expect($settingsAuditCount())->toBe(5);
 
     // Second save with the exact same values should write zero new entries.
     $this->actingAs($pm)->patch(route('settings.update'), validSettingsPayload());
-    expect($settingsAuditCount())->toBe(4);
+    expect($settingsAuditCount())->toBe(5);
 });
 
 it('sla clock reads the live setting instead of the old hardcoded config value', function () {

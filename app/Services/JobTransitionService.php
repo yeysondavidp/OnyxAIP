@@ -6,6 +6,7 @@ use App\Enums\JobStatus;
 use App\Jobs\WriteAuditLog;
 use App\Models\ServiceJob;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -98,6 +99,13 @@ class JobTransitionService
             ipAddress: request()->ip(),
             userAgent: request()->userAgent(),
         );
+
+        // PM notification on job completion / remediation flag (US-13.1). Resolved via the
+        // container rather than constructor injection — this service is instantiated
+        // directly (`new JobTransitionService`) at several existing call sites.
+        if (in_array($newStatus, [JobStatus::Completed, JobStatus::RequiresRemediation], strict: true)) {
+            app(NotificationDispatcher::class)->jobStatusChanged($job);
+        }
     }
 
     public function isPermitted(JobStatus $from, JobStatus $to): bool
