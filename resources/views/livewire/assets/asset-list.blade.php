@@ -70,7 +70,7 @@
     @endif
 
     {{-- Loading --}}
-    <div wire:loading.delay style="margin-bottom: var(--space-4); display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-14); color: var(--text-secondary);">
+    <div wire:loading.delay.flex style="display: none; margin-bottom: var(--space-4); align-items: center; gap: var(--space-2); font-size: var(--fs-14); color: var(--text-secondary);">
         <x-onyx.spinner size="sm" />
         Loading…
     </div>

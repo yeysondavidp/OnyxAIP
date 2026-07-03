@@ -20,7 +20,7 @@ class CreateStoreRequest extends FormRequest
         return [
             'client_id'           => ['required', 'integer', 'exists:clients,id'],
             'store_name'          => ['required', 'string', 'max:255'],
-            'store_code'          => ['required', 'string', 'max:20', 'unique:stores,store_code'],
+            'store_code'          => ['nullable', 'string', 'max:20', 'unique:stores,store_code'],
             'store_type'          => ['required', Rule::enum(StoreType::class)],
             'address_line1'       => ['required', 'string', 'max:255'],
             'suburb'              => ['required', 'string', 'max:100'],

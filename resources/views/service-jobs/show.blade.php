@@ -12,11 +12,6 @@
         @endif
     </x-slot:headerActions>
 
-    {{-- Flash messages --}}
-    @if (session('success'))
-        <x-onyx.alert tone="positive" style="margin-bottom: var(--space-4);">{{ session('success') }}</x-onyx.alert>
-    @endif
-
     {{-- Header --}}
     <div style="margin-bottom: var(--space-6);">
         <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-1); flex-wrap: wrap;">
@@ -141,7 +136,7 @@
             </x-onyx.card>
 
             {{-- PM Attachments --}}
-            <x-onyx.card variant="default" padding="none">
+            <x-onyx.card variant="default" padding="none" x-data="{}">
                 <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
                     <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary);">Attachments</h2>
                 </div>
@@ -151,20 +146,47 @@
                         <p style="font-size: var(--fs-13); color: var(--text-tertiary);">No attachments yet.</p>
                     </div>
                 @else
+                    @php
+                        $attachmentItems = $job->attachments->map(fn ($a) => [
+                            'url'  => route('jobs.attachments.preview', [$job, $a]),
+                            'name' => $a->original_filename,
+                            'type' => str_starts_with($a->mime_type, 'image/') ? 'image' : 'document',
+                        ])->values();
+                    @endphp
                     @foreach ($job->attachments as $att)
+                        @php $isImage = str_starts_with($att->mime_type, 'image/'); @endphp
                         <div style="padding: var(--space-3) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: var(--space-3);">
-                                <span style="font-size: var(--fs-14); color: var(--text-primary);">{{ $att->original_filename }}</span>
-                                <span style="font-size: var(--fs-12); color: var(--text-tertiary);">{{ $att->mime_type }}</span>
-                            </div>
-                            <div style="display: flex; gap: var(--space-2);">
+                            <button type="button"
+                                @click="window.dispatchEvent(new CustomEvent('onyx-lightbox:open', { detail: { items: @js($attachmentItems), index: {{ $loop->index }} } }))"
+                                style="display: flex; align-items: center; gap: var(--space-3); background: none; border: none; padding: 0; cursor: pointer; text-align: left;">
+                                @if ($isImage)
+                                    <img src="{{ route('jobs.attachments.preview', [$job, $att]) }}" alt="{{ $att->original_filename }}"
+                                        style="width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-default); flex-shrink: 0;">
+                                @else
+                                    <span style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); border: 1px solid var(--border-default); background: var(--surface-raised); color: var(--text-secondary); flex-shrink: 0;">
+                                        <x-icon name="file-text" size="20" />
+                                    </span>
+                                @endif
+                                <span style="display: flex; flex-direction: column; gap: 2px;">
+                                    <span style="font-size: var(--fs-14); color: var(--text-primary);">{{ $att->original_filename }}</span>
+                                    <span style="font-size: var(--fs-12); color: var(--text-tertiary);">{{ $att->mime_type }}</span>
+                                </span>
+                            </button>
+                            <div style="display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0;">
                                 <a href="{{ route('jobs.attachments.download', [$job, $att]) }}"
                                     style="font-size: var(--fs-13); color: var(--bronze-600); text-decoration: none;">Download</a>
-                                <form method="POST" action="{{ route('jobs.attachments.destroy', [$job, $att]) }}"
-                                    onsubmit="return confirm('Delete this attachment?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" style="font-size: var(--fs-13); color: var(--critical-600); background: none; border: none; cursor: pointer; padding: 0;">Delete</button>
-                                </form>
+                                <div x-data="{}" @onyx-dialog-confirm="$refs.deleteAttachmentForm{{ $att->id }}.submit()">
+                                    <x-onyx.dialog title="Delete attachment?" confirmLabel="Delete" confirmTone="critical">
+                                        <x-slot:trigger>
+                                            <span style="font-size: var(--fs-13); color: var(--critical); cursor: pointer;">Delete</span>
+                                        </x-slot:trigger>
+                                        Are you sure you want to delete <strong>{{ $att->original_filename }}</strong>? This cannot be undone.
+                                    </x-onyx.dialog>
+                                    <form method="POST" action="{{ route('jobs.attachments.destroy', [$job, $att]) }}"
+                                        x-ref="deleteAttachmentForm{{ $att->id }}" style="display: none;">
+                                        @csrf @method('DELETE')
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     @endforeach
@@ -296,7 +318,12 @@
 
             {{-- Technicians --}}
             <x-onyx.card variant="default" padding="lg">
-                <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-4);">Technicians</h2>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4);">
+                    <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary);">Technicians</h2>
+                    @if ($canEdit)
+                        <x-onyx.button href="{{ route('jobs.invite-form', $job) }}" variant="outline" size="xs">Invite technician</x-onyx.button>
+                    @endif
+                </div>
                 @if ($job->technicians->isEmpty())
                     <p style="font-size: var(--fs-13); color: var(--text-tertiary);">No technicians assigned.</p>
                 @else
@@ -322,23 +349,31 @@
             {{-- Cancel --}}
             @if (! $job->trashed() && ! $job->job_status->isTerminal())
                 <x-onyx.card variant="outline" padding="lg">
-                    <h2 style="font-size: var(--fs-14); font-weight: var(--weight-semibold); color: var(--critical-600); margin-bottom: var(--space-2);">Cancel job</h2>
+                    <h2 style="font-size: var(--fs-14); font-weight: var(--weight-semibold); color: var(--critical); margin-bottom: var(--space-2);">Cancel job</h2>
                     <p style="font-size: var(--fs-13); color: var(--text-secondary); margin-bottom: var(--space-3);">
                         Cancelling removes the job from the active board. This action can be seen in the audit log.
                     </p>
-                    <form method="POST" action="{{ route('jobs.destroy', $job) }}"
-                        onsubmit="return confirm('Cancel this job? It will be removed from the active board.')">
-                        @csrf @method('DELETE')
-                        <x-onyx.button type="submit" variant="ghost"
-                            style="color: var(--critical-600); border-color: var(--critical-300);">
-                            Cancel job
-                        </x-onyx.button>
-                    </form>
+                    <div x-data="{}" @onyx-dialog-confirm="$refs.cancelJobForm.submit()">
+                        <x-onyx.dialog title="Cancel this job?" confirmLabel="Cancel job" confirmTone="critical">
+                            <x-slot:trigger>
+                                <x-onyx.button type="button" variant="ghost"
+                                    style="color: var(--critical); border-color: var(--critical);">
+                                    Cancel job
+                                </x-onyx.button>
+                            </x-slot:trigger>
+                            It will be removed from the active board. This action can be seen in the audit log.
+                        </x-onyx.dialog>
+                        <form x-ref="cancelJobForm" method="POST" action="{{ route('jobs.destroy', $job) }}" style="display: none;">
+                            @csrf @method('DELETE')
+                        </form>
+                    </div>
                 </x-onyx.card>
             @endif
 
         </div>
 
     </div>
+
+    <x-onyx.lightbox />
 
 </x-layouts.app>

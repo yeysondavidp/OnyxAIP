@@ -87,7 +87,7 @@
 
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-8);">
                     <x-onyx.button href="{{ route('clients.index') }}" variant="ghost">Cancel</x-onyx.button>
                     <x-onyx.button type="submit" variant="accent">Save client</x-onyx.button>
                 </div>

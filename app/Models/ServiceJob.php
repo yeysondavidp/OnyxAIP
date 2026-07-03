@@ -75,6 +75,22 @@ class ServiceJob extends BaseModel
         ];
     }
 
+    /**
+     * Build a unique job reference for the current year, e.g. "JOB-2026-001".
+     * Used when the PM leaves the Job Reference field blank on creation.
+     */
+    public static function generateReference(): string
+    {
+        $year     = now()->format('Y');
+        $sequence = 1;
+        do {
+            $candidate = sprintf('JOB-%s-%03d', $year, $sequence);
+            $sequence++;
+        } while (self::withTrashed()->where('job_reference', $candidate)->exists());
+
+        return $candidate;
+    }
+
     // ── Relationships ──────────────────────────────────────────────────────────
 
     /** @return BelongsTo<Client, $this> */

@@ -75,11 +75,14 @@ $stateClass = $error ? 'onyx-select--error' : '';
   color: var(--text-muted);
   flex-shrink: 0;
 }
+.onyx-field__required { color: var(--critical); margin-left: 2px; }
 </style>
 
 <div class="onyx-field">
   @if ($label)
-    <label for="{{ $inputId }}" class="onyx-field__label">{{ $label }}</label>
+    <label for="{{ $inputId }}" class="onyx-field__label">
+      {{ $label }}@if ($attributes->has('required'))<span class="onyx-field__required" aria-hidden="true">*</span>@endif
+    </label>
   @endif
 
   <div class="onyx-select-wrap {{ $sizeClass }} {{ $stateClass }}">

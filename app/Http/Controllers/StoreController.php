@@ -41,6 +41,10 @@ class StoreController extends Controller
         $data            = $request->validated();
         $data['country'] = $data['country'] ?? 'Australia';
 
+        if (empty($data['store_code'])) {
+            $data['store_code'] = Store::generateCode(Client::findOrFail($data['client_id']), $data['suburb']);
+        }
+
         // client_id comes from the validated form — PM is authorised to assign any client
         $store = Store::create($data);
 

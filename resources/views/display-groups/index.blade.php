@@ -12,10 +12,6 @@
         <x-onyx.button href="{{ route('stores.display-groups.create', $store) }}" variant="primary" size="sm">Add display group</x-onyx.button>
     </x-slot:headerActions>
 
-    @if (session('success'))
-        <x-onyx.alert tone="positive" style="margin-bottom: var(--space-5);">{{ session('success') }}</x-onyx.alert>
-    @endif
-
     <div style="margin-bottom: var(--space-6);">
         <h1 style="font-size: var(--fs-24); font-weight: var(--weight-bold); color: var(--text-primary); margin-bottom: var(--space-1);">Display Groups</h1>
         <p style="font-size: var(--fs-14); color: var(--text-secondary);">

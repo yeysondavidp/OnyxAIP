@@ -9,6 +9,7 @@ use App\Traits\ClientScoped;
 use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property AustralianState $state
@@ -49,5 +50,29 @@ class Store extends BaseModel
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
+    }
+
+    /**
+     * Build a unique store code from the client's code and suburb, e.g. "PAN-SYD-001".
+     * Used when the PM leaves the Store Code field blank on creation.
+     */
+    public static function generateCode(Client $client, string $suburb): string
+    {
+        $prefix     = strtoupper($client->client_code);
+        $suburbCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $suburb) ?? '', 0, 3));
+        $suburbCode = $suburbCode !== '' ? $suburbCode : 'GEN';
+
+        $sequence = 1;
+        do {
+            $candidate = sprintf('%s-%s-%03d', $prefix, $suburbCode, $sequence);
+            $sequence++;
+        } while (self::where('store_code', $candidate)->exists());
+
+        return $candidate;
     }
 }

@@ -12,8 +12,9 @@
         <div style="
             width: 64px;
             height: 64px;
-            border-radius: var(--radius-full);
-            background: rgba(var(--critical-rgb, 239, 68, 68), 0.12);
+            border-radius: var(--radius-circle);
+            background: var(--critical-soft);
+            color: var(--critical);
             display: flex;
             align-items: center;
             justify-content: center;

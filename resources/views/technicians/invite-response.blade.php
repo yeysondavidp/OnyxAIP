@@ -15,7 +15,7 @@
                     <p style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--positive-700);">You have accepted this job.</p>
                     <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-top: var(--space-2);">Your project manager will be in touch with further details.</p>
                 @elseif ($currentStatus->value === 'declined')
-                    <p style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--critical-600);">You have declined this job.</p>
+                    <p style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--critical);">You have declined this job.</p>
                     <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-top: var(--space-2);">If you've changed your mind, contact your ONYX project manager.</p>
                 @endif
             </x-onyx.card>

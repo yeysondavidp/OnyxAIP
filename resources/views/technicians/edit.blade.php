@@ -1,6 +1,19 @@
 <x-layouts.app title="Edit — {{ $profile->name }}">
 
     <x-slot:breadcrumbs>
+
+    <style>
+        /* Base row styles live in a class (not inline) so .onyx-row-selected's
+           border-color can win the cascade — an inline border shorthand would
+           always beat a class, regardless of specificity. */
+        .onyx-row {
+            display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3);
+            border: 1px solid var(--border-default); border-radius: var(--radius-md);
+            cursor: pointer; min-height: 44px;
+        }
+        .onyx-row-selected { border-color: var(--bronze-500); background: var(--bronze-100); }
+    </style>
+
         <a href="{{ route('technicians.index') }}" style="font-size: var(--fs-14); color: var(--text-secondary); text-decoration: none;">Technicians</a>
         <span style="font-size: var(--fs-14); color: var(--text-tertiary); margin: 0 var(--space-2);">/</span>
         <a href="{{ route('technicians.show', $profile) }}" style="font-size: var(--fs-14); color: var(--text-secondary); text-decoration: none;">{{ $profile->name }}</a>
@@ -61,8 +74,8 @@
                     <x-onyx.eyebrow>Specialties</x-onyx.eyebrow>
                     <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4);">
                         @foreach ($specialties as $spec)
-                            <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); cursor: pointer; min-height: 44px;"
-                                :style="specialties.includes('{{ $spec->value }}') ? 'border-color: var(--bronze-500); background: var(--bronze-50);' : ''">
+                            <label class="onyx-row"
+                                :class="specialties.includes('{{ $spec->value }}') ? 'onyx-row-selected' : ''">
                                 <input type="checkbox" name="specialty_categories[]" value="{{ $spec->value }}"
                                     :checked="specialties.includes('{{ $spec->value }}')"
                                     @change="toggleSpec('{{ $spec->value }}')"

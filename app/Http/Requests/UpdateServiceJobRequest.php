@@ -35,7 +35,7 @@ class UpdateServiceJobRequest extends FormRequest
             'job_type'                 => ['required', Rule::enum(JobType::class)],
             'scheduled_date'           => ['nullable', 'date_format:Y-m-d'],
             'scheduled_time'           => ['nullable', 'date_format:H:i', 'required_with:scheduled_date'],
-            'early_start_window'       => ['required', Rule::enum(EarlyStartWindow::class)],
+            'early_start_window'       => ['nullable', Rule::enum(EarlyStartWindow::class)],
             'client_email'             => ['nullable', 'email', 'max:255'],
             'client_name'              => ['nullable', 'string', 'max:255'],
             'asset_ids'                => ['nullable', 'array'],

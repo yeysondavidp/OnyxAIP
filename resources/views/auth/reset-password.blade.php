@@ -3,7 +3,7 @@
     <h1 style="font-size: var(--fs-20); font-weight: var(--weight-bold); color: var(--text-primary); margin-bottom: var(--space-2);">
         Choose a new password
     </h1>
-    <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-bottom: var(--space-7);">
+    <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-bottom: var(--space-8);">
         Passwords must be at least 12 characters.
     </p>
 

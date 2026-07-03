@@ -1,5 +1,11 @@
 <x-layouts.app title="Invite Technicians — {{ $job->job_reference }}">
 
+    <style>
+        /* :class toggles a class without touching the static inline style,
+           unlike :style which replaces the whole style attribute. */
+        .onyx-technician-row--selected { background: var(--bronze-100); }
+    </style>
+
     <x-slot:breadcrumbs>
         <a href="{{ route('jobs.index') }}" style="font-size: var(--fs-14); color: var(--text-secondary); text-decoration: none;">Service Jobs</a>
         <span style="font-size: var(--fs-14); color: var(--text-tertiary); margin: 0 var(--space-2);">/</span>
@@ -39,7 +45,7 @@
                     @foreach ($profiles as $profile)
                         @php $alreadySent = in_array($profile->id, $alreadyInvited); @endphp
                         <label style="display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-subtle); cursor: pointer; min-height: 56px;"
-                            :style="selected.includes({{ $profile->id }}) ? 'background: var(--bronze-50);' : ''">
+                            :class="selected.includes({{ $profile->id }}) ? 'onyx-technician-row--selected' : ''">
                             <input type="checkbox" name="profile_ids[]" value="{{ $profile->id }}"
                                 :checked="selected.includes({{ $profile->id }})"
                                 @change="selected.includes({{ $profile->id }}) ? selected.splice(selected.indexOf({{ $profile->id }}), 1) : selected.push({{ $profile->id }})"

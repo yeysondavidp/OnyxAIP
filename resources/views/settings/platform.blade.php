@@ -114,7 +114,7 @@
 
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-8);">
                     <x-onyx.button type="submit" variant="accent">Save settings</x-onyx.button>
                 </div>
 

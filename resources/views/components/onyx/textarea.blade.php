@@ -26,9 +26,25 @@ $inputId    = $id ?? 'textarea-' . uniqid();
 $stateClass = $error ? 'onyx-input--error' : '';
 @endphp
 
+<style>
+.onyx-input-wrap textarea {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+.onyx-field__required { color: var(--critical); margin-left: 2px; }
+</style>
+
 <div class="onyx-field">
   @if ($label)
-    <label for="{{ $inputId }}" class="onyx-field__label">{{ $label }}</label>
+    <label for="{{ $inputId }}" class="onyx-field__label">
+      {{ $label }}@if ($attributes->has('required'))<span class="onyx-field__required" aria-hidden="true">*</span>@endif
+    </label>
   @endif
 
   <div class="onyx-input-wrap onyx-input--md {{ $stateClass }}" style="align-items: flex-start;">

@@ -22,7 +22,7 @@
         @enderror
 
         {{-- Evidence: technician checkpoints --}}
-        <x-onyx.card variant="default" padding="lg" style="margin-bottom: var(--space-5);">
+        <x-onyx.card variant="default" padding="lg" style="margin-bottom: var(--space-5);" x-data="{}">
             <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-4);">Visit evidence</h2>
 
             @forelse ($checkpoints as $cp)
@@ -63,15 +63,29 @@
             @endforelse
 
             {{-- Photos --}}
+            @php
+                $beforePhotoItems = $beforePhotos->map(fn ($p) => [
+                    'url'  => route('jobs.photos.preview', [$job, $p]),
+                    'name' => 'Before photo #'.$p->id,
+                    'type' => 'image',
+                ])->values();
+                $afterPhotoItems = $afterPhotos->map(fn ($p) => [
+                    'url'  => route('jobs.photos.preview', [$job, $p]),
+                    'name' => 'After photo #'.$p->id,
+                    'type' => 'image',
+                ])->values();
+            @endphp
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
                 <div>
                     <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">Before photos ({{ $beforePhotos->count() }})</p>
                     <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
                         @forelse ($beforePhotos as $photo)
-                            <a href="{{ route('jobs.photos.download', [$job, $photo]) }}" target="_blank"
-                                style="font-size: var(--fs-11); color: var(--bronze-600); text-decoration: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3);">
-                                Photo #{{ $photo->id }}
-                            </a>
+                            <button type="button"
+                                @click="window.dispatchEvent(new CustomEvent('onyx-lightbox:open', { detail: { items: @js($beforePhotoItems), index: {{ $loop->index }} } }))"
+                                style="padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; width: 72px; height: 72px;">
+                                <img src="{{ route('jobs.photos.preview', [$job, $photo]) }}" alt="Before photo #{{ $photo->id }}"
+                                    style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                            </button>
                         @empty
                             <span style="font-size: var(--fs-12); color: var(--text-tertiary);">None</span>
                         @endforelse
@@ -81,10 +95,12 @@
                     <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">After photos ({{ $afterPhotos->count() }})</p>
                     <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
                         @forelse ($afterPhotos as $photo)
-                            <a href="{{ route('jobs.photos.download', [$job, $photo]) }}" target="_blank"
-                                style="font-size: var(--fs-11); color: var(--bronze-600); text-decoration: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3);">
-                                Photo #{{ $photo->id }}
-                            </a>
+                            <button type="button"
+                                @click="window.dispatchEvent(new CustomEvent('onyx-lightbox:open', { detail: { items: @js($afterPhotoItems), index: {{ $loop->index }} } }))"
+                                style="padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; width: 72px; height: 72px;">
+                                <img src="{{ route('jobs.photos.preview', [$job, $photo]) }}" alt="After photo #{{ $photo->id }}"
+                                    style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                            </button>
                         @empty
                             <span style="font-size: var(--fs-12); color: var(--text-tertiary);">None</span>
                         @endforelse
@@ -161,5 +177,7 @@
             </form>
         </x-onyx.card>
     </div>
+
+    <x-onyx.lightbox />
 
 </x-layouts.app>

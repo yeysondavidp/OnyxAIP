@@ -82,7 +82,7 @@ class ServiceJobController extends Controller
 
         $job = DB::transaction(function () use ($validated, $store, $client, $parentJobId, $jobLevel, $slaFields) {
             $job = ServiceJob::create([
-                'job_reference'      => $validated['job_reference'],
+                'job_reference'      => ($validated['job_reference'] ?? null) ?: ServiceJob::generateReference(),
                 'job_name'           => $validated['job_name'],
                 'job_description'    => $validated['job_description'],
                 'job_type'           => $validated['job_type'],
@@ -91,7 +91,7 @@ class ServiceJobController extends Controller
                 'job_timezone'       => $store->store_timezone,
                 'scheduled_date'     => $validated['scheduled_date'] ?? null,
                 'scheduled_time'     => $validated['scheduled_time'] ?? null,
-                'early_start_window' => $validated['early_start_window'],
+                'early_start_window' => $validated['early_start_window'] ?? EarlyStartWindow::Anytime->value,
                 'job_status'         => JobStatus::Draft->value,
                 'parent_job_id'      => $parentJobId,
                 'job_level'          => $jobLevel,
@@ -161,7 +161,7 @@ class ServiceJobController extends Controller
                 'job_type'           => $validated['job_type'],
                 'scheduled_date'     => $validated['scheduled_date'] ?? null,
                 'scheduled_time'     => $validated['scheduled_time'] ?? null,
-                'early_start_window' => $validated['early_start_window'],
+                'early_start_window' => $validated['early_start_window'] ?? EarlyStartWindow::Anytime->value,
                 'client_email'       => $validated['client_email'] ?? null,
                 'client_name'        => $validated['client_name']  ?? null,
             ]);
@@ -328,6 +328,20 @@ class ServiceJobController extends Controller
         );
     }
 
+    /** Serve an attachment inline for in-platform preview (US-08.6). */
+    public function previewAttachment(ServiceJob $job, JobAttachment $attachment): StreamedResponse
+    {
+        $this->authorize('view', $job);
+
+        abort_if($attachment->job_id !== $job->id, 403);
+
+        return Storage::disk('local')->response(
+            $attachment->stored_path,
+            $attachment->original_filename,
+            ['Content-Type' => $attachment->mime_type]
+        );
+    }
+
     /** Delete a PM attachment. */
     public function destroyAttachment(ServiceJob $job, JobAttachment $attachment): RedirectResponse
     {
@@ -349,6 +363,20 @@ class ServiceJobController extends Controller
         abort_if($photo->job_id !== $job->id, 403);
 
         return Storage::disk('local')->download(
+            $photo->stored_path,
+            $photo->type->value.'-photo-'.$photo->id.'.jpg',
+            ['Content-Type' => $photo->mime_type]
+        );
+    }
+
+    /** Serve a before/after job photo inline for the PM preview gallery (US-11.1). */
+    public function previewPhoto(ServiceJob $job, JobPhoto $photo): StreamedResponse
+    {
+        $this->authorize('view', $job);
+
+        abort_if($photo->job_id !== $job->id, 403);
+
+        return Storage::disk('local')->response(
             $photo->stored_path,
             $photo->type->value.'-photo-'.$photo->id.'.jpg',
             ['Content-Type' => $photo->mime_type]

@@ -19,11 +19,17 @@
         @if (!empty($showActions))
             <div style="display: flex; gap: var(--space-2); flex-shrink: 0;">
                 <x-onyx.button href="{{ route('stores.display-groups.edit', [$group->store_id, $group]) }}" variant="outline" size="xs">Edit</x-onyx.button>
-                <form method="POST" action="{{ route('stores.display-groups.destroy', [$group->store_id, $group]) }}" onsubmit="return confirm('Delete display group "{{ addslashes($group->group_name) }}"? The player and screens will be unassigned but not deleted.')">
-                    @csrf
-                    @method('DELETE')
-                    <x-onyx.button type="submit" variant="danger-outline" size="xs">Delete</x-onyx.button>
-                </form>
+                <div x-data="{}" @onyx-dialog-confirm="$refs.deleteDisplayGroupForm{{ $group->id }}.submit()">
+                    <x-onyx.dialog :title="'Delete display group \"'.$group->group_name.'\"?'" confirmLabel="Delete" confirmTone="critical">
+                        <x-slot:trigger>
+                            <x-onyx.button type="button" variant="danger-outline" size="xs">Delete</x-onyx.button>
+                        </x-slot:trigger>
+                        The player and screens will be unassigned but not deleted.
+                    </x-onyx.dialog>
+                    <form x-ref="deleteDisplayGroupForm{{ $group->id }}" method="POST" action="{{ route('stores.display-groups.destroy', [$group->store_id, $group]) }}" style="display: none;">
+                        @csrf @method('DELETE')
+                    </form>
+                </div>
             </div>
         @endif
     </div>

@@ -5,14 +5,19 @@ use App\Enums\AssetType;
 use App\Enums\EarlyStartWindow;
 use App\Enums\JobStatus;
 use App\Enums\JobType;
+use App\Enums\PhotoType;
 use App\Models\Asset;
 use App\Models\Client;
+use App\Models\JobAttachment;
+use App\Models\JobPhoto;
 use App\Models\ServiceJob;
 use App\Models\Store;
 use App\Models\TechnicianProfile;
 use App\Models\User;
 use App\Services\JobTransitionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -41,6 +46,15 @@ it('unauthenticated user is redirected to login', function () {
 
 // ── Create / Store (US-08.1) ──────────────────────────────────────────────────
 
+it('pm can view the create job page', function () {
+    $pm = User::factory()->pm()->create();
+    Store::factory()->create();
+
+    $this->actingAs($pm)
+        ->get(route('jobs.create'))
+        ->assertOk();
+});
+
 it('pm can create a service job', function () {
     $pm    = User::factory()->pm()->create();
     $store = Store::factory()->create();
@@ -64,6 +78,50 @@ it('pm can create a service job', function () {
         'client_id'     => $store->client_id,        // derived server-side
         'store_id'      => $store->id,
         'job_timezone'  => $store->store_timezone,   // derived from store
+    ]);
+});
+
+it('auto-generates a job_reference when left blank', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+
+    $this->actingAs($pm)
+        ->post(route('jobs.store'), [
+            'store_id'           => $store->id,
+            'job_name'           => 'Pandora Q3 Maintenance',
+            'job_description'    => 'Inspect all screens.',
+            'job_type'           => JobType::RoutineMaintenance->value,
+            'early_start_window' => EarlyStartWindow::Anytime->value,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('service_jobs', [
+        'job_name' => 'Pandora Q3 Maintenance',
+    ]);
+
+    expect(ServiceJob::first()->job_reference)->toStartWith('JOB-'.now()->format('Y').'-');
+});
+
+it('pm can create a flexible job without a scheduled date, time, or window', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+
+    $this->actingAs($pm)
+        ->post(route('jobs.store'), [
+            'store_id'        => $store->id,
+            'job_reference'   => 'JOB-FLEX-001',
+            'job_name'        => 'Pandora Flexible Visit',
+            'job_description' => 'Inspect all screens.',
+            'job_type'        => JobType::RoutineMaintenance->value,
+            'is_flexible'     => '1',
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('service_jobs', [
+        'job_reference'      => 'JOB-FLEX-001',
+        'scheduled_date'     => null,
+        'scheduled_time'     => null,
+        'early_start_window' => 'anytime',
     ]);
 });
 
@@ -353,6 +411,59 @@ it('pm can view a job detail page', function () {
         ->get(route('jobs.show', $job))
         ->assertOk()
         ->assertSee($job->job_name);
+});
+
+// ── In-platform attachment/photo preview ──────────────────────────────────────
+
+it('pm can preview a job attachment inline without forcing a download', function () {
+    Storage::fake('local');
+
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create();
+
+    $file = UploadedFile::fake()->image('site-photo.jpg');
+    Storage::disk('local')->putFileAs('job-attachments/'.$job->id, $file, 'site-photo.jpg');
+
+    $attachment = JobAttachment::create([
+        'job_id'            => $job->id,
+        'original_filename' => 'site-photo.jpg',
+        'stored_path'       => 'job-attachments/'.$job->id.'/site-photo.jpg',
+        'mime_type'         => 'image/jpeg',
+        'file_size'         => $file->getSize(),
+    ]);
+
+    $response = $this->actingAs($pm)->get(route('jobs.attachments.preview', [$job, $attachment]));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Disposition'))->toContain('inline');
+});
+
+it('pm can preview a job photo inline without forcing a download', function () {
+    Storage::fake('local');
+
+    $pm      = User::factory()->pm()->create();
+    $store   = Store::factory()->create();
+    $job     = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create();
+    $profile = TechnicianProfile::factory()->create();
+
+    $file = UploadedFile::fake()->image('before.jpg');
+    Storage::disk('local')->putFileAs('job-photos/'.$job->id, $file, 'before.jpg');
+
+    $photo = JobPhoto::create([
+        'job_id'                => $job->id,
+        'technician_profile_id' => $profile->id,
+        'type'                  => PhotoType::Before->value,
+        'stored_path'           => 'job-photos/'.$job->id.'/before.jpg',
+        'mime_type'             => 'image/jpeg',
+        'file_size'             => $file->getSize(),
+        'client_upload_id'      => 'upload-1',
+    ]);
+
+    $response = $this->actingAs($pm)->get(route('jobs.photos.preview', [$job, $photo]));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Disposition'))->toContain('inline');
 });
 
 // ── Force complete (US-08.4) ──────────────────────────────────────────────────

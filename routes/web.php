@@ -108,10 +108,12 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     // Job attachments (US-08.6)
     Route::post('/jobs/{job}/attachments', [ServiceJobController::class, 'storeAttachment'])->name('jobs.attachments.store');
     Route::get('/jobs/{job}/attachments/{attachment}/download', [ServiceJobController::class, 'downloadAttachment'])->name('jobs.attachments.download');
+    Route::get('/jobs/{job}/attachments/{attachment}/preview', [ServiceJobController::class, 'previewAttachment'])->name('jobs.attachments.preview');
     Route::delete('/jobs/{job}/attachments/{attachment}', [ServiceJobController::class, 'destroyAttachment'])->name('jobs.attachments.destroy');
 
     // Before/after job photos — PM review (US-11.1)
     Route::get('/jobs/{job}/photos/{photo}/download', [ServiceJobController::class, 'downloadPhoto'])->name('jobs.photos.download');
+    Route::get('/jobs/{job}/photos/{photo}/preview', [ServiceJobController::class, 'previewPhoto'])->name('jobs.photos.preview');
     Route::resource('technicians', TechnicianController::class);
 
     // Invitation send (US-09.2) — rate-limited

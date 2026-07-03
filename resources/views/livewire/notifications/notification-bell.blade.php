@@ -33,9 +33,9 @@
                     <div
                         wire:click="openNotification('{{ $notification->id }}', '{{ $notification->data['url'] ?? '' }}')"
                         wire:key="notification-{{ $notification->id }}"
-                        style="display: block; padding: var(--space-4); border-bottom: 1px solid var(--border-subtle); cursor: pointer; {{ $notification->read_at ? '' : 'background: var(--bronze-50);' }}"
+                        style="display: block; padding: var(--space-4); border-bottom: 1px solid var(--border-subtle); cursor: pointer; {{ $notification->read_at ? '' : 'background: var(--bronze-100);' }}"
                         onmouseover="this.style.background='var(--surface-sunken)'"
-                        onmouseout="this.style.background='{{ $notification->read_at ? 'transparent' : 'var(--bronze-50)' }}'"
+                        onmouseout="this.style.background='{{ $notification->read_at ? 'transparent' : 'var(--bronze-100)' }}'"
                     >
                         <div style="display: flex; align-items: center; gap: var(--space-2);">
                             @unless ($notification->read_at)

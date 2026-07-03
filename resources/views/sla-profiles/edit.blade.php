@@ -86,7 +86,7 @@
 
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-8);">
                     <x-onyx.button href="{{ route('sla-profiles.show', $profile) }}" variant="ghost">Cancel</x-onyx.button>
                     <x-onyx.button type="submit" variant="accent">Save changes</x-onyx.button>
                 </div>
@@ -105,15 +105,20 @@
                                 and can no longer be assigned to a client.
                             </p>
                         </div>
-                        <form method="POST" action="{{ route('sla-profiles.destroy', $profile) }}"
-                              onsubmit="return confirm('Deactivate {{ addslashes($profile->name) }}? Clients already assigned to it will keep it until reassigned.')">
-                            @csrf
-                            @method('DELETE')
-                            <x-onyx.button type="submit" variant="outline" size="sm"
-                                           style="color: var(--critical); border-color: var(--critical);">
-                                Deactivate
-                            </x-onyx.button>
-                        </form>
+                        <div x-data="{}" @onyx-dialog-confirm="$refs.deactivateSlaForm.submit()">
+                            <x-onyx.dialog title="Deactivate {{ $profile->name }}?" confirmLabel="Deactivate" confirmTone="critical">
+                                <x-slot:trigger>
+                                    <x-onyx.button type="button" variant="outline" size="sm"
+                                                   style="color: var(--critical); border-color: var(--critical);">
+                                        Deactivate
+                                    </x-onyx.button>
+                                </x-slot:trigger>
+                                Clients already assigned to it will keep it until reassigned.
+                            </x-onyx.dialog>
+                            <form x-ref="deactivateSlaForm" method="POST" action="{{ route('sla-profiles.destroy', $profile) }}" style="display: none;">
+                                @csrf @method('DELETE')
+                            </form>
+                        </div>
                     </div>
                 </x-onyx.card>
             </div>

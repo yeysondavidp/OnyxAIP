@@ -3,7 +3,7 @@
     <h1 style="font-size: var(--fs-20); font-weight: var(--weight-bold); color: var(--text-primary); margin-bottom: var(--space-2);">
         Welcome back
     </h1>
-    <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-bottom: var(--space-7);">
+    <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-bottom: var(--space-8);">
         Sign in to ONYX Asset Intelligence Platform
     </p>
 

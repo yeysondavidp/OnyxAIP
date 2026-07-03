@@ -150,7 +150,7 @@
 
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-8);">
                     <x-onyx.button href="{{ route('stores.show', $store) }}" variant="ghost">Cancel</x-onyx.button>
                     <x-onyx.button type="submit" variant="accent">Save changes</x-onyx.button>
                 </div>
@@ -169,15 +169,20 @@
                                 The store record and all its history are preserved. Deactivated stores are hidden from active lists.
                             </p>
                         </div>
-                        <form method="POST" action="{{ route('stores.destroy', $store) }}"
-                              onsubmit="return confirm('Deactivate {{ addslashes($store->store_name) }}? The record will be preserved but hidden from active lists.')">
-                            @csrf
-                            @method('DELETE')
-                            <x-onyx.button type="submit" variant="outline" size="sm"
-                                           style="color: var(--critical); border-color: var(--critical);">
-                                Deactivate
-                            </x-onyx.button>
-                        </form>
+                        <div x-data="{}" @onyx-dialog-confirm="$refs.deactivateStoreForm.submit()">
+                            <x-onyx.dialog title="Deactivate {{ $store->store_name }}?" confirmLabel="Deactivate" confirmTone="critical">
+                                <x-slot:trigger>
+                                    <x-onyx.button type="button" variant="outline" size="sm"
+                                                   style="color: var(--critical); border-color: var(--critical);">
+                                        Deactivate
+                                    </x-onyx.button>
+                                </x-slot:trigger>
+                                The record will be preserved but hidden from active lists.
+                            </x-onyx.dialog>
+                            <form x-ref="deactivateStoreForm" method="POST" action="{{ route('stores.destroy', $store) }}" style="display: none;">
+                                @csrf @method('DELETE')
+                            </form>
+                        </div>
                     </div>
                 </x-onyx.card>
             </div>

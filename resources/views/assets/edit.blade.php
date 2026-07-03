@@ -227,11 +227,17 @@
                             Decommissioning sets the asset status to Decommissioned and removes it from active views. The asset record is preserved for history.
                         </p>
                         @if ($asset->asset_status->value !== 'decommissioned')
-                            <form method="POST" action="{{ route('assets.destroy', $asset) }}" onsubmit="return confirm('Decommission this asset? The record will be preserved for history.');">
-                                @csrf
-                                @method('DELETE')
-                                <x-onyx.button type="submit" variant="destructive" size="sm">Decommission</x-onyx.button>
-                            </form>
+                            <div x-data="{}" @onyx-dialog-confirm="$refs.decommissionAssetForm.submit()">
+                                <x-onyx.dialog title="Decommission this asset?" confirmLabel="Decommission" confirmTone="critical">
+                                    <x-slot:trigger>
+                                        <x-onyx.button type="button" variant="destructive" size="sm">Decommission</x-onyx.button>
+                                    </x-slot:trigger>
+                                    The record will be preserved for history.
+                                </x-onyx.dialog>
+                                <form x-ref="decommissionAssetForm" method="POST" action="{{ route('assets.destroy', $asset) }}" style="display: none;">
+                                    @csrf @method('DELETE')
+                                </form>
+                            </div>
                         @endif
                     </div>
                 </x-onyx.card>

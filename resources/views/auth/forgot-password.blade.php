@@ -3,7 +3,7 @@
     <h1 style="font-size: var(--fs-20); font-weight: var(--weight-bold); color: var(--text-primary); margin-bottom: var(--space-2);">
         Forgot your password?
     </h1>
-    <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-bottom: var(--space-7);">
+    <p style="font-size: var(--fs-14); color: var(--text-secondary); margin-bottom: var(--space-8);">
         Enter your email address and we'll send you a reset link if an account exists.
     </p>
 

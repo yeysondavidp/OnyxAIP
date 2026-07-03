@@ -24,7 +24,7 @@
                         type="text"
                         :value="old('name')"
                         :error="$errors->first('name')"
-                        helper="e.g. &quot;Pandora Standard&quot;"
+                        helper='e.g. "Pandora Standard"'
                         required
                         autocomplete="off"
                     />
@@ -88,7 +88,7 @@
 
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-8);">
                     <x-onyx.button href="{{ route('sla-profiles.index') }}" variant="ghost">Cancel</x-onyx.button>
                     <x-onyx.button type="submit" variant="accent">Save profile</x-onyx.button>
                 </div>

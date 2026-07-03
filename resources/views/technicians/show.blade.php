@@ -12,10 +12,6 @@
         @endif
     </x-slot:headerActions>
 
-    @if (session('success'))
-        <x-onyx.alert tone="positive" style="margin-bottom: var(--space-4);">{{ session('success') }}</x-onyx.alert>
-    @endif
-
     <div style="margin-bottom: var(--space-6);">
         <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-1);">
             <h1 style="font-size: var(--fs-28); font-weight: var(--weight-bold); color: var(--text-primary);">{{ $profile->name }}</h1>
@@ -130,18 +126,24 @@
 
             @if ($profile->is_active)
                 <x-onyx.card variant="outline" padding="lg">
-                    <h2 style="font-size: var(--fs-14); font-weight: var(--weight-semibold); color: var(--critical-600); margin-bottom: var(--space-2);">Deactivate</h2>
+                    <h2 style="font-size: var(--fs-14); font-weight: var(--weight-semibold); color: var(--critical); margin-bottom: var(--space-2);">Deactivate</h2>
                     <p style="font-size: var(--fs-13); color: var(--text-secondary); margin-bottom: var(--space-3);">
                         Deactivated technicians are hidden from job assignment but their history is preserved.
                     </p>
-                    <form method="POST" action="{{ route('technicians.destroy', $profile) }}"
-                        onsubmit="return confirm('Deactivate {{ $profile->name }}?')">
-                        @csrf @method('DELETE')
-                        <x-onyx.button type="submit" variant="ghost"
-                            style="color: var(--critical-600); border-color: var(--critical-300);">
-                            Deactivate
-                        </x-onyx.button>
-                    </form>
+                    <div x-data="{}" @onyx-dialog-confirm="$refs.deactivateTechForm.submit()">
+                        <x-onyx.dialog title="Deactivate {{ $profile->name }}?" confirmLabel="Deactivate" confirmTone="critical">
+                            <x-slot:trigger>
+                                <x-onyx.button type="button" variant="ghost"
+                                    style="color: var(--critical); border-color: var(--critical);">
+                                    Deactivate
+                                </x-onyx.button>
+                            </x-slot:trigger>
+                            Deactivated technicians are hidden from job assignment but their history is preserved.
+                        </x-onyx.dialog>
+                        <form x-ref="deactivateTechForm" method="POST" action="{{ route('technicians.destroy', $profile) }}" style="display: none;">
+                            @csrf @method('DELETE')
+                        </form>
+                    </div>
                 </x-onyx.card>
             @endif
 

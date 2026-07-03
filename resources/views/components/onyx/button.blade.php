@@ -2,7 +2,8 @@
   ONYX Button
 
   Props:
-    variant  solid | outline | ghost | accent   (default: solid)
+    variant  solid | primary | outline | ghost | accent | destructive | danger-outline  (default: solid)
+             "primary" is an alias of "solid" — the platform's established convention for the main CTA.
     size     sm | md | lg                        (default: md)
     type     button | submit | reset             (default: button)
     fullWidth bool                               (default: false)
@@ -78,6 +79,16 @@ $tag        = $href ? 'a' : 'button';
 /* bronze-600 (#79613f) on onyx-25 = 5.48:1 — passes WCAG AA */
 .onyx-btn--accent  { background: var(--bronze-600); color: var(--onyx-25); }
 .onyx-btn--accent:hover:not(:disabled) { background: var(--bronze-700); }
+
+/* "primary" is the platform's established name for the main filled CTA. */
+.onyx-btn--primary { background: var(--onyx-900); color: var(--onyx-25); }
+.onyx-btn--primary:hover:not(:disabled) { background: var(--onyx-700); }
+
+.onyx-btn--destructive { background: var(--critical); color: var(--onyx-25); }
+.onyx-btn--destructive:hover:not(:disabled) { background: var(--critical); opacity: 0.9; }
+
+.onyx-btn--danger-outline { background: transparent; color: var(--critical); border-color: var(--critical); }
+.onyx-btn--danger-outline:hover:not(:disabled) { background: var(--critical-soft); }
 </style>
 
 @if ($href)

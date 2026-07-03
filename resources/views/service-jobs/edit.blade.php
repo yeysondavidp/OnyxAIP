@@ -1,5 +1,17 @@
 <x-layouts.app title="Edit Job — {{ $job->job_name }}">
 
+    <style>
+        /* Base row styles live in a class (not inline) so .onyx-row-selected's
+           border-color can win the cascade — an inline border shorthand would
+           always beat a class, regardless of specificity. */
+        .onyx-row {
+            display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3);
+            border: 1px solid var(--border-default); border-radius: var(--radius-md);
+            cursor: pointer; min-height: 44px;
+        }
+        .onyx-row-selected { border-color: var(--bronze-500); background: var(--bronze-100); }
+    </style>
+
     <x-slot:breadcrumbs>
         <a href="{{ route('jobs.index') }}" style="font-size: var(--fs-14); color: var(--text-secondary); text-decoration: none;">Service Jobs</a>
         <span style="font-size: var(--fs-14); color: var(--text-tertiary); margin: 0 var(--space-2);">/</span>
@@ -45,6 +57,18 @@
                 },
                 isAssetSelected(id) { return this.selectedAssets.includes(id); },
                 isTechSelected(id) { return this.selectedTechs.includes(id); },
+                flexible: {{ old('is_flexible', (! $job->scheduled_date && ! $job->scheduled_time) ? '1' : '') ? 'true' : 'false' }},
+                scheduledDate: '{{ old('scheduled_date', $job->scheduled_date?->format('Y-m-d')) }}',
+                scheduledTime: '{{ old('scheduled_time', $job->scheduled_time) }}',
+                earlyStartWindow: '{{ old('early_start_window', $job->early_start_window->value) }}',
+                setFlexible(value) {
+                    this.flexible = value;
+                    if (value) {
+                        this.scheduledDate = '';
+                        this.scheduledTime = '';
+                        this.earlyStartWindow = 'anytime';
+                    }
+                },
             }">
             @csrf
             @method('PUT')
@@ -106,25 +130,36 @@
                 <x-onyx.card variant="default" padding="xl">
                     <x-onyx.eyebrow>Schedule</x-onyx.eyebrow>
                     <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-4);">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4);">
+
+                        <label style="display: flex; align-items: center; gap: var(--space-2); min-height: 44px; cursor: pointer; width: fit-content;">
+                            <input type="checkbox" name="is_flexible" value="1"
+                                :checked="flexible" @change="setFlexible($event.target.checked)"
+                                style="width: 20px; height: 20px;">
+                            <span style="font-size: var(--fs-14); color: var(--text-primary);">Flexible — no fixed date or time</span>
+                        </label>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4);"
+                            :style="flexible ? 'opacity: 0.5; pointer-events: none;' : ''">
                             <x-onyx.input name="scheduled_date" label="Scheduled date" type="date"
-                                :value="old('scheduled_date', $job->scheduled_date?->format('Y-m-d'))"
+                                x-model="scheduledDate" x-bind:disabled="flexible"
                                 :error="$errors->first('scheduled_date')" />
 
                             <x-onyx.input name="scheduled_time" label="Scheduled time" type="time"
-                                :value="old('scheduled_time', $job->scheduled_time)"
+                                x-model="scheduledTime" x-bind:disabled="flexible"
                                 :error="$errors->first('scheduled_time')" />
 
                             <x-onyx.select name="early_start_window" label="Early start window"
-                                :error="$errors->first('early_start_window')" required>
+                                x-model="earlyStartWindow" x-bind:disabled="flexible"
+                                :error="$errors->first('early_start_window')">
                                 @foreach ($earlyStartWindows as $window)
-                                    <option value="{{ $window->value }}"
-                                        @selected(old('early_start_window', $job->early_start_window->value) === $window->value)>
-                                        {{ $window->label() }}
-                                    </option>
+                                    <option value="{{ $window->value }}">{{ $window->label() }}</option>
                                 @endforeach
                             </x-onyx.select>
                         </div>
+
+                        <p style="font-size: var(--fs-13); color: var(--text-tertiary);" x-show="flexible" x-cloak>
+                            This job will be saved without a scheduled date or time — the technician can be assigned a time later.
+                        </p>
                     </div>
                 </x-onyx.card>
 
@@ -138,8 +173,8 @@
                     <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4);">
                         @if ($job->store && \App\Models\Asset::where('store_id', $job->store_id)->exists())
                             <template x-for="asset in storeAssets" :key="asset.id">
-                                <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); cursor: pointer; min-height: 44px;"
-                                    :style="isAssetSelected(asset.id) ? 'border-color: var(--bronze-500); background: var(--bronze-50);' : ''">
+                                <label class="onyx-row"
+                                    :class="isAssetSelected(asset.id) ? 'onyx-row-selected' : ''">
                                     <input type="checkbox" :value="asset.id" name="asset_ids[]"
                                         :checked="isAssetSelected(asset.id)"
                                         @change="toggleAsset(asset.id)"
@@ -166,8 +201,8 @@
                     @enderror
                     <div style="display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4);">
                         @forelse ($technicians as $tech)
-                            <label style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); cursor: pointer; min-height: 44px;"
-                                :style="isTechSelected({{ $tech->id }}) ? 'border-color: var(--bronze-500); background: var(--bronze-50);' : ''">
+                            <label class="onyx-row"
+                                :class="isTechSelected({{ $tech->id }}) ? 'onyx-row-selected' : ''">
                                 <input type="checkbox" name="technician_ids[]" value="{{ $tech->id }}"
                                     :checked="isTechSelected({{ $tech->id }})"
                                     @change="toggleTech({{ $tech->id }})"

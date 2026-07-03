@@ -23,13 +23,13 @@ class StoreServiceJobRequest extends FormRequest
     {
         return [
             'store_id'           => ['required', 'integer', Rule::exists('stores', 'id')],
-            'job_reference'      => ['required', 'string', 'max:80', Rule::unique('service_jobs', 'job_reference')],
+            'job_reference'      => ['nullable', 'string', 'max:80', Rule::unique('service_jobs', 'job_reference')],
             'job_name'           => ['required', 'string', 'max:255'],
             'job_description'    => ['required', 'string', 'max:5000'],
             'job_type'           => ['required', Rule::enum(JobType::class)],
             'scheduled_date'     => ['nullable', 'date_format:Y-m-d'],
             'scheduled_time'     => ['nullable', 'date_format:H:i', 'required_with:scheduled_date'],
-            'early_start_window' => ['required', Rule::enum(EarlyStartWindow::class)],
+            'early_start_window' => ['nullable', Rule::enum(EarlyStartWindow::class)],
             'parent_job_id'      => ['nullable', 'integer', Rule::exists('service_jobs', 'id')],
             'client_email'       => ['nullable', 'email', 'max:255'],
             'client_name'        => ['nullable', 'string', 'max:255'],

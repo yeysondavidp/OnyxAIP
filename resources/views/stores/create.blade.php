@@ -42,12 +42,11 @@
 
                     <x-onyx.input
                         name="store_code"
-                        label="Store code"
+                        label="Store code (optional)"
                         type="text"
                         :value="old('store_code')"
                         :error="$errors->first('store_code')"
-                        helper="Unique identifier, e.g. PAN-SYD-001. Max 20 characters."
-                        required
+                        helper="e.g. PAN-SYD-001. Leave blank to auto-generate from the client and suburb. Max 20 characters."
                         maxlength="20"
                     />
 
@@ -159,7 +158,7 @@
 
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-7);">
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-8);">
                     <x-onyx.button href="{{ route('stores.index') }}" variant="ghost">Cancel</x-onyx.button>
                     <x-onyx.button type="submit" variant="accent">Save store</x-onyx.button>
                 </div>
