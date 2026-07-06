@@ -28,10 +28,19 @@
             max-width: 480px;
             margin: 0 auto;
         }
+        /* Shared so .tech-screen-header's sticky offset always lines up with
+           this header's actual rendered height, including the safe-area
+           inset on notched devices — both stick at the same time, so a
+           mismatched offset would overlap or leave a gap while scrolling. */
+        :root {
+            --tech-header-height: calc(20px + var(--space-4) * 2 + env(safe-area-inset-top));
+        }
         .tech-header {
             position: sticky;
             top: 0;
             z-index: 30;
+            height: var(--tech-header-height);
+            box-sizing: border-box;
             background: var(--onyx-900);
             color: var(--onyx-50);
             padding: var(--space-4) var(--space-5);
@@ -57,11 +66,10 @@
            and could clip long job/client names. */
         .tech-screen-header {
             position: sticky;
-            top: 0;
-            z-index: 30;
+            top: var(--tech-header-height);
+            z-index: 20;
             background: var(--onyx-900);
             padding: var(--space-4) var(--space-5);
-            padding-top: calc(var(--space-4) + env(safe-area-inset-top));
         }
 
         /* The design system's base reset (h1, h2, ... { color: var(--text-primary) })
