@@ -34,7 +34,29 @@ jobs:
       - name: Build test image
         run: docker build --target test -t onyx-aip:test .
 
-      # `tests/` is excluded from the image via .dockerignore to keep the
+      # .env is excluded from the image (.dockerignore), so any command that
+      # boots the framework (Larastan, Pest — Pint doesn't) needs one mounted
+      # in, or config defaults that call realpath()/etc. at boot can misbehave
+      # with no environment to read from.
+      - name: Prepare .env for the containers
+        run: |
+          cat > .env <<EOF
+          APP_ENV=testing
+          APP_KEY=base64:$(openssl rand -base64 32)
+          APP_DEBUG=true
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=onyx_aip_test
+          DB_USERNAME=onyx_aip
+          DB_PASSWORD=secret
+          QUEUE_CONNECTION=sync
+          CACHE_STORE=array
+          SESSION_DRIVER=array
+          MAIL_MAILER=array
+          EOF
+
+      # tests/ is excluded from the image via .dockerignore to keep the
       # production `runtime` image lean, so it's mounted in here instead of
       # being baked into a layer.
       - name: Security audit
@@ -49,27 +71,18 @@ jobs:
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
           onyx-aip:test ./vendor/bin/pint --test
 
-      - name: Static analysis (Larastan level 5)
-        run: >
-          docker run --rm
-          -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
-          onyx-aip:test ./vendor/bin/phpstan analyse
-
       # --network host puts the container on the runner's network namespace
       # so it can reach the mysql service container at 127.0.0.1:3306.
+      - name: Static analysis (Larastan level 5)
+        run: >
+          docker run --rm --network host
+          -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
+          -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
+          onyx-aip:test ./vendor/bin/phpstan analyse
+
       - name: Tests (Pest)
         run: >
           docker run --rm --network host
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
-          -e APP_ENV=testing
-          -e APP_KEY=base64:$(openssl rand -base64 32)
-          -e DB_CONNECTION=mysql
-          -e DB_HOST=127.0.0.1
-          -e DB_PORT=3306
-          -e DB_DATABASE=onyx_aip_test
-          -e DB_USERNAME=onyx_aip
-          -e DB_PASSWORD=secret
-          -e QUEUE_CONNECTION=sync
-          -e CACHE_STORE=array
-          -e SESSION_DRIVER=array
+          -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
           onyx-aip:test ./vendor/bin/pest --ci
