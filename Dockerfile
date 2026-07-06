@@ -19,7 +19,7 @@ RUN npm run build
 # ============================================================
 # Stage 2 — PHP-FPM runtime (nginx proxy sits in front)
 # ============================================================
-FROM php:8.3-fpm-alpine AS runtime
+FROM php:8.4-fpm-alpine AS runtime
 
 # ---- system deps + PHP extensions -------------------------
 RUN apk add --no-cache \
