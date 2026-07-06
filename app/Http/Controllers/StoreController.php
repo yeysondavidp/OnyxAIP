@@ -76,12 +76,21 @@ class StoreController extends Controller
             ->orderBy('sla_resolution_target_at')
             ->get();
 
+        // Recent service jobs at this store (§8) — independent of the
+        // per-asset Service History log below, so a visit still shows up
+        // here even when it has no affected assets attached.
+        $recentJobs = ServiceJob::where('store_id', $store->id)
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get();
+
         return view('stores.show', [
             'store'          => $store->load('client'),
             'assets'         => $assets,
             'assetCount'     => $assetCount,
             'displayGroups'  => $displayGroups,
             'slaTrackedJobs' => $slaTrackedJobs,
+            'recentJobs'     => $recentJobs,
         ]);
     }
 

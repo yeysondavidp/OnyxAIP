@@ -1,11 +1,11 @@
 <x-layouts.technician title="Before Photos — {{ $jobModel->job_name }}">
 
     @php
-        $signedParams = request()->only(['token', 'technician_profile_id', 'expires', 'signature']);
-        $uploadUrl    = route('technician.job.photos', array_merge(['job' => $jobModel->id], $signedParams));
-        $briefUrl     = route('technician.job.brief',  array_merge(['job' => $jobModel->id], $signedParams));
-        $cancelUrl    = route('technician.job.cancel-start', array_merge(['job' => $jobModel->id], $signedParams));
-        $csrfToken    = csrf_token();
+        $urlService = app(\App\Services\TechnicianUrlService::class);
+        $uploadUrl  = $urlService->resignFromRequest(request(), 'technician.job.photos', ['job' => $jobModel->id]);
+        $briefUrl   = $urlService->resignFromRequest(request(), 'technician.job.brief', ['job' => $jobModel->id]);
+        $cancelUrl  = $urlService->resignFromRequest(request(), 'technician.job.cancel-start', ['job' => $jobModel->id]);
+        $csrfToken  = csrf_token();
     @endphp
 
     <div class="tech-shell"
@@ -18,9 +18,11 @@
                 files.forEach(file => {
                     const id       = crypto.randomUUID();
                     const preview  = URL.createObjectURL(file);
-                    const entry    = { id, file, preview, uploadId: id, status: 'queued', serverId: null, error: null };
-                    this.photos.push(entry);
-                    this.uploadOne(entry);
+                    this.photos.push({ id, file, preview, uploadId: id, status: 'queued', serverId: null, error: null });
+                    // Re-read the pushed entry from the reactive array — mutating
+                    // the plain object above wouldn't be tracked by Alpine, so
+                    // status updates during upload would never reach the UI.
+                    this.uploadOne(this.photos.find(p => p.id === id));
                 });
                 event.target.value = '';
             },
@@ -79,7 +81,7 @@
         }">
 
         {{-- Header --}}
-        <div class="tech-header">
+        <div class="tech-screen-header">
             <p style="font-size: var(--fs-12); color: var(--onyx-400); margin-bottom: var(--space-1);">Step 1 of 4</p>
             <h1 style="font-size: var(--fs-18); font-weight: var(--weight-semibold);">Before photos</h1>
         </div>

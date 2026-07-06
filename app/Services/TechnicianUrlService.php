@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 
@@ -55,5 +56,26 @@ class TechnicianUrlService
     public function scopeMatchesRequest(Request $request, int $expectedProfileId): bool
     {
         return (int) $request->query('technician_profile_id') === $expectedProfileId;
+    }
+
+    /**
+     * Build a signed URL for a different checkpoint route within the same technician
+     * flow. Laravel's signature is bound to the exact URL (path + query), so hopping
+     * from one screen's route to another's requires a freshly computed signature —
+     * reusing the incoming request's `signature` verbatim (as every JobFlowController
+     * redirect and screen-2/3/4 view previously did) always fails validation on the
+     * new path. Preserves the original invitation's `expires` deadline rather than
+     * extending it on every hop.
+     */
+    public function resignFromRequest(Request $request, string $routeName, array $parameters = []): string
+    {
+        return URL::temporarySignedRoute(
+            $routeName,
+            Carbon::createFromTimestamp((int) $request->query('expires')),
+            array_merge($parameters, [
+                'token'                 => (string) $request->query('token', ''),
+                'technician_profile_id' => $request->query('technician_profile_id'),
+            ])
+        );
     }
 }

@@ -82,21 +82,19 @@ class ServiceJobController extends Controller
 
         $job = DB::transaction(function () use ($validated, $store, $client, $parentJobId, $jobLevel, $slaFields) {
             $job = ServiceJob::create([
-                'job_reference'      => ($validated['job_reference'] ?? null) ?: ServiceJob::generateReference(),
-                'job_name'           => $validated['job_name'],
-                'job_description'    => $validated['job_description'],
-                'job_type'           => $validated['job_type'],
-                'client_id'          => $client->id,
-                'store_id'           => $store->id,
-                'job_timezone'       => $store->store_timezone,
-                'scheduled_date'     => $validated['scheduled_date'] ?? null,
-                'scheduled_time'     => $validated['scheduled_time'] ?? null,
-                'early_start_window' => $validated['early_start_window'] ?? EarlyStartWindow::Anytime->value,
-                'job_status'         => JobStatus::Draft->value,
-                'parent_job_id'      => $parentJobId,
-                'job_level'          => $jobLevel,
-                'client_email'       => $validated['client_email'] ?? null,
-                'client_name'        => $validated['client_name']  ?? null,
+                'job_reference'   => ($validated['job_reference'] ?? null) ?: ServiceJob::generateReference(),
+                'job_name'        => $validated['job_name'],
+                'job_description' => $validated['job_description'],
+                'job_type'        => $validated['job_type'],
+                'client_id'       => $client->id,
+                'store_id'        => $store->id,
+                'job_timezone'    => $store->store_timezone,
+                ...$this->scheduleFields($validated),
+                'job_status'    => JobStatus::Draft->value,
+                'parent_job_id' => $parentJobId,
+                'job_level'     => $jobLevel,
+                'client_email'  => $validated['client_email'] ?? null,
+                'client_name'   => $validated['client_name']  ?? null,
                 ...$slaFields,
             ]);
 
@@ -130,7 +128,20 @@ class ServiceJobController extends Controller
             'attachments',
         ]);
 
-        return view('service-jobs.show', compact('job'));
+        // Visit evidence (US-11.1) — persists on the job page regardless of
+        // status, so it doesn't disappear once the job is validated.
+        $checkpoints = JobCheckpoint::where('job_id', $job->id)
+            ->with('profile')
+            ->get();
+
+        $outcomes = JobAssetOutcome::where('job_id', $job->id)->get()->keyBy('asset_id');
+
+        $beforePhotos = JobPhoto::where('job_id', $job->id)->where('type', PhotoType::Before->value)->get();
+        $afterPhotos  = JobPhoto::where('job_id', $job->id)->where('type', PhotoType::After->value)->get();
+
+        return view('service-jobs.show', compact(
+            'job', 'checkpoints', 'outcomes', 'beforePhotos', 'afterPhotos'
+        ));
     }
 
     // ── Edit ───────────────────────────────────────────────────────────────────
@@ -155,15 +166,13 @@ class ServiceJobController extends Controller
 
         DB::transaction(function () use ($validated, $job) {
             $job->update([
-                'job_reference'      => $validated['job_reference'],
-                'job_name'           => $validated['job_name'],
-                'job_description'    => $validated['job_description'],
-                'job_type'           => $validated['job_type'],
-                'scheduled_date'     => $validated['scheduled_date'] ?? null,
-                'scheduled_time'     => $validated['scheduled_time'] ?? null,
-                'early_start_window' => $validated['early_start_window'] ?? EarlyStartWindow::Anytime->value,
-                'client_email'       => $validated['client_email'] ?? null,
-                'client_name'        => $validated['client_name']  ?? null,
+                'job_reference'   => $validated['job_reference'],
+                'job_name'        => $validated['job_name'],
+                'job_description' => $validated['job_description'],
+                'job_type'        => $validated['job_type'],
+                ...$this->scheduleFields($validated),
+                'client_email' => $validated['client_email'] ?? null,
+                'client_name'  => $validated['client_name']  ?? null,
             ]);
 
             $this->syncAffectedAssets($job, $validated['asset_ids'] ?? []);
@@ -384,6 +393,28 @@ class ServiceJobController extends Controller
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
+
+    /**
+     * Resolve the persisted schedule columns from validated input. Flexible jobs are
+     * forced to a null date/time and the "Anytime" window server-side — never trust
+     * that the client actually left the (disabled) date/time inputs blank.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function scheduleFields(array $validated): array
+    {
+        $isFlexible = $validated['is_flexible'] ?? false;
+
+        return [
+            'is_flexible'        => $isFlexible,
+            'scheduled_date'     => $isFlexible ? null : ($validated['scheduled_date'] ?? null),
+            'scheduled_time'     => $isFlexible ? null : ($validated['scheduled_time'] ?? null),
+            'early_start_window' => $isFlexible
+                ? EarlyStartWindow::Anytime->value
+                : ($validated['early_start_window'] ?? EarlyStartWindow::Anytime->value),
+        ];
+    }
 
     /**
      * Sync the affected-assets pivot and auto-transition eligible assets

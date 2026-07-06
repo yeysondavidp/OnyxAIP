@@ -88,3 +88,18 @@ USER app
 EXPOSE 9000
 
 CMD ["php-fpm"]
+
+
+# ============================================================
+# Stage 3 — CI test image: adds dev dependencies (Pint/Larastan/
+# Pest) on top of the runtime image. Never shipped to production —
+# docker-compose.yml pins every service to the `runtime` target.
+# `tests/` is excluded by .dockerignore to keep the runtime image
+# lean, so CI bind-mounts it in at `docker run` time instead of
+# baking it into this layer.
+# ============================================================
+FROM runtime AS test
+
+USER root
+RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
+USER app

@@ -135,6 +135,23 @@ it('store dashboard shows sla status for an open sla-tracked job', function () {
         ->assertSee('On track');
 });
 
+it('store dashboard lists a recent service job even when it has no affected assets', function () {
+    $pm     = User::factory()->pm()->create();
+    $client = Client::factory()->create();
+    $store  = Store::factory()->create(['client_id' => $client->id]);
+    ServiceJob::factory()->forClient($client, $store)->validated()->create([
+        'job_reference' => 'JOB-NO-ASSETS',
+        'job_name'      => 'Assetless visit',
+    ]);
+
+    $this->actingAs($pm)
+        ->get(route('stores.show', $store))
+        ->assertOk()
+        ->assertSee('Recent Service Jobs')
+        ->assertSee('Assetless visit')
+        ->assertSee('JOB-NO-ASSETS');
+});
+
 it('cross-tenant store dashboard is inaccessible', function () {
     $clientA = Client::factory()->create();
     $clientB = Client::factory()->create();

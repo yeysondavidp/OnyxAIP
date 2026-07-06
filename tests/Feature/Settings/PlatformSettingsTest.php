@@ -154,6 +154,7 @@ it('sla clock reads the live setting instead of the old hardcoded config value',
         'job_description'    => 'Desc.',
         'job_type'           => JobType::FaultRepair->value,
         'early_start_window' => EarlyStartWindow::Anytime->value,
+        'is_flexible'        => '1',
     ]);
 
     $created = ServiceJob::where('job_reference', 'JOB-SETTINGS-001')->firstOrFail();

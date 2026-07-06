@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    name: Pint · Larastan · Pest
+    name: Build image · Pint · Larastan · Pest (Docker)
     runs-on: ubuntu-latest
 
     services:
@@ -28,35 +28,48 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.3"
-          extensions: pdo_mysql, mbstring, bcmath, pcntl, intl, zip, gd, exif, redis
-          coverage: none
+      # Builds the same multi-stage Dockerfile used for deployment (ADR-002),
+      # through its `test` stage — this validates the Node asset build and the
+      # PHP-FPM runtime image actually build, not just that the app code works.
+      - name: Build test image
+        run: docker build --target test -t onyx-aip:test .
 
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
+      # `tests/` is excluded from the image via .dockerignore to keep the
+      # production `runtime` image lean, so it's mounted in here instead of
+      # being baked into a layer.
       - name: Security audit
-        run: composer audit --no-dev
+        run: >
+          docker run --rm
+          -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
+          onyx-aip:test composer audit --no-dev
 
       - name: Style check (Pint)
-        run: ./vendor/bin/pint --test
+        run: >
+          docker run --rm
+          -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
+          onyx-aip:test ./vendor/bin/pint --test
 
       - name: Static analysis (Larastan level 5)
-        run: ./vendor/bin/phpstan analyse
+        run: >
+          docker run --rm
+          -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
+          onyx-aip:test ./vendor/bin/phpstan analyse
 
+      # --network host puts the container on the runner's network namespace
+      # so it can reach the mysql service container at 127.0.0.1:3306.
       - name: Tests (Pest)
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: onyx_aip_test
-          DB_USERNAME: onyx_aip
-          DB_PASSWORD: secret
-          QUEUE_CONNECTION: sync
-          CACHE_STORE: array
-          SESSION_DRIVER: array
-        run: ./vendor/bin/pest --ci
+        run: >
+          docker run --rm --network host
+          -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
+          -e APP_ENV=testing
+          -e APP_KEY=base64:$(openssl rand -base64 32)
+          -e DB_CONNECTION=mysql
+          -e DB_HOST=127.0.0.1
+          -e DB_PORT=3306
+          -e DB_DATABASE=onyx_aip_test
+          -e DB_USERNAME=onyx_aip
+          -e DB_PASSWORD=secret
+          -e QUEUE_CONNECTION=sync
+          -e CACHE_STORE=array
+          -e SESSION_DRIVER=array
+          onyx-aip:test ./vendor/bin/pest --ci

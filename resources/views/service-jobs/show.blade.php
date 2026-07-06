@@ -101,6 +101,119 @@
                 <p style="font-size: var(--fs-14); color: var(--text-primary); white-space: pre-wrap; line-height: 1.6;">{{ $job->job_description }}</p>
             </x-onyx.card>
 
+            {{-- Visit evidence — persists here regardless of job status, so it
+                 isn't only reachable via the Review & validate flow while the
+                 job is Completed (US-11.1). --}}
+            @php
+                $hasVisitEvidence = $checkpoints->isNotEmpty() || $beforePhotos->isNotEmpty() || $afterPhotos->isNotEmpty();
+            @endphp
+            @if ($hasVisitEvidence)
+                @php
+                    $beforePhotoItems = $beforePhotos->map(fn ($p) => [
+                        'url'  => route('jobs.photos.preview', [$job, $p]),
+                        'name' => 'Before photo #'.$p->id,
+                        'type' => 'image',
+                    ])->values();
+                    $afterPhotoItems = $afterPhotos->map(fn ($p) => [
+                        'url'  => route('jobs.photos.preview', [$job, $p]),
+                        'name' => 'After photo #'.$p->id,
+                        'type' => 'image',
+                    ])->values();
+                @endphp
+                <x-onyx.card variant="default" padding="lg" x-data="{}">
+                    <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary); margin-bottom: var(--space-4);">Visit evidence</h2>
+
+                    @foreach ($checkpoints as $cp)
+                        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle);">
+                            <p style="font-size: var(--fs-13); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                                {{ $cp->profile?->name ?? 'Technician' }}
+                            </p>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); font-size: var(--fs-13); color: var(--text-secondary);">
+                                <div>
+                                    <span style="color: var(--text-tertiary);">Started</span>
+                                    <div style="color: var(--text-primary);">
+                                        {{ $cp->start_timestamp_utc?->setTimezone($job->job_timezone)->format('d M Y, g:i A') ?? '—' }}
+                                        @if ($cp->start_lat && $cp->start_lng)
+                                            <span style="font-size: var(--fs-11); color: var(--text-tertiary);">({{ number_format($cp->start_lat, 4) }}, {{ number_format($cp->start_lng, 4) }})</span>
+                                        @elseif ($cp->start_gps_status && $cp->start_gps_status !== 'granted')
+                                            <span style="font-size: var(--fs-11); color: var(--text-tertiary);">(GPS {{ $cp->start_gps_status }})</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div>
+                                    <span style="color: var(--text-tertiary);">Completed</span>
+                                    <div style="color: var(--text-primary);">
+                                        {{ $cp->end_timestamp_utc?->setTimezone($job->job_timezone)->format('d M Y, g:i A') ?? '—' }}
+                                        @if ($cp->end_lat && $cp->end_lng)
+                                            <span style="font-size: var(--fs-11); color: var(--text-tertiary);">({{ number_format($cp->end_lat, 4) }}, {{ number_format($cp->end_lng, 4) }})</span>
+                                        @elseif ($cp->end_gps_status && $cp->end_gps_status !== 'granted')
+                                            <span style="font-size: var(--fs-11); color: var(--text-tertiary);">(GPS {{ $cp->end_gps_status }})</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            @if ($cp->completion_notes)
+                                <p style="font-size: var(--fs-13); color: var(--text-primary); margin-top: var(--space-2);">{{ $cp->completion_notes }}</p>
+                            @endif
+                        </div>
+                    @endforeach
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
+                        <div>
+                            <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">Before photos ({{ $beforePhotos->count() }})</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
+                                @forelse ($beforePhotos as $photo)
+                                    <button type="button"
+                                        @click="window.dispatchEvent(new CustomEvent('onyx-lightbox:open', { detail: { items: @js($beforePhotoItems), index: {{ $loop->index }} } }))"
+                                        style="padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; width: 72px; height: 72px;">
+                                        <img src="{{ route('jobs.photos.preview', [$job, $photo]) }}" alt="Before photo #{{ $photo->id }}"
+                                            style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                    </button>
+                                @empty
+                                    <span style="font-size: var(--fs-12); color: var(--text-tertiary);">None</span>
+                                @endforelse
+                            </div>
+                        </div>
+                        <div>
+                            <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">After photos ({{ $afterPhotos->count() }})</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
+                                @forelse ($afterPhotos as $photo)
+                                    <button type="button"
+                                        @click="window.dispatchEvent(new CustomEvent('onyx-lightbox:open', { detail: { items: @js($afterPhotoItems), index: {{ $loop->index }} } }))"
+                                        style="padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; width: 72px; height: 72px;">
+                                        <img src="{{ route('jobs.photos.preview', [$job, $photo]) }}" alt="After photo #{{ $photo->id }}"
+                                            style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                    </button>
+                                @empty
+                                    <span style="font-size: var(--fs-12); color: var(--text-tertiary);">None</span>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+
+                    @if ($job->assets->isNotEmpty() && $outcomes->isNotEmpty())
+                        <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
+                            <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-3);">Asset outcomes</p>
+                            @foreach ($job->assets as $asset)
+                                @php $outcome = $outcomes->get($asset->id); @endphp
+                                @if ($outcome)
+                                    <div style="padding: var(--space-2) 0;">
+                                        <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
+                                            <span style="font-size: var(--fs-14); font-weight: var(--weight-medium); color: var(--text-primary);">{{ $asset->asset_name }}</span>
+                                            <span style="font-size: var(--fs-12); color: var(--text-tertiary);">→</span>
+                                            <span style="font-size: var(--fs-13); color: var(--text-secondary);">{{ $outcome->post_service_status->label() }}</span>
+                                        </div>
+                                        @if ($outcome->technician_notes)
+                                            <p style="font-size: var(--fs-13); color: var(--text-secondary); margin-top: var(--space-1);">"{{ $outcome->technician_notes }}"</p>
+                                        @endif
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    @endif
+                </x-onyx.card>
+            @endif
+
             {{-- Affected assets --}}
             <x-onyx.card variant="default" padding="none">
                 <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">

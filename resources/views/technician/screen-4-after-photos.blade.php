@@ -1,13 +1,34 @@
 <x-layouts.technician title="After Photos — {{ $jobModel->job_name }}">
 
     @php
-        $signedParams = request()->only(['token', 'technician_profile_id', 'expires', 'signature']);
-        $uploadUrl    = route('technician.job.photos', array_merge(['job' => $jobModel->id], $signedParams));
-        $completeUrl  = route('technician.job.complete', array_merge(['job' => $jobModel->id], $signedParams));
-        $briefUrl     = route('technician.job.brief', array_merge(['job' => $jobModel->id], $signedParams));
-        $csrfToken    = csrf_token();
-        $assetIds     = $jobModel->assets->pluck('id')->toArray();
+        $urlService  = app(\App\Services\TechnicianUrlService::class);
+        $uploadUrl   = $urlService->resignFromRequest(request(), 'technician.job.photos', ['job' => $jobModel->id]);
+        $completeUrl = $urlService->resignFromRequest(request(), 'technician.job.complete', ['job' => $jobModel->id]);
+        $briefUrl    = $urlService->resignFromRequest(request(), 'technician.job.brief', ['job' => $jobModel->id]);
+        $csrfToken   = csrf_token();
+        $assetIds    = $jobModel->assets->pluck('id')->toArray();
     @endphp
+
+    <style>
+        /* Static styling lives in classes, with only the state toggled via
+           :class/:disabled — an x-bind:style string replaces (not merges with)
+           a static style attribute on the same element, which was wiping out
+           the base look (size, padding, radius) in every state. */
+        .tech-status-chip {
+            min-height: 44px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+            font-size: var(--fs-13); cursor: pointer;
+            background: var(--surface-tertiary); border: 1px solid var(--border-default); color: var(--text-primary);
+        }
+        .tech-status-chip--active {
+            background: var(--bronze-100); border: 1px solid var(--bronze-400); color: var(--bronze-800); font-weight: 600;
+        }
+        .tech-submit-btn {
+            width: 100%; height: 56px; background: var(--bronze-700); color: #fff;
+            font-size: var(--fs-16); font-weight: var(--weight-bold); border: none;
+            border-radius: var(--radius-lg); cursor: pointer;
+        }
+        .tech-submit-btn:disabled { opacity: .4; cursor: not-allowed; }
+    </style>
 
     <div class="tech-shell"
         x-data="{
@@ -24,9 +45,11 @@
                 files.forEach(file => {
                     const id      = crypto.randomUUID();
                     const preview = URL.createObjectURL(file);
-                    const entry   = { id, file, preview, uploadId: id, status: 'queued', serverId: null, error: null };
-                    this.photos.push(entry);
-                    this.uploadOne(entry);
+                    this.photos.push({ id, file, preview, uploadId: id, status: 'queued', serverId: null, error: null });
+                    // Re-read the pushed entry from the reactive array — mutating
+                    // the plain object above wouldn't be tracked by Alpine, so
+                    // status updates during upload would never reach the UI.
+                    this.uploadOne(this.photos.find(p => p.id === id));
                 });
                 event.target.value = '';
             },
@@ -103,7 +126,7 @@
         x-init="captureGps()">
 
         {{-- Header --}}
-        <div class="tech-header">
+        <div class="tech-screen-header">
             <p style="font-size: var(--fs-12); color: var(--onyx-400); margin-bottom: var(--space-1);">Step 3 of 4</p>
             <h1 style="font-size: var(--fs-18); font-weight: var(--weight-semibold);">After photos &amp; outcomes</h1>
         </div>
@@ -162,8 +185,8 @@
                                 @foreach ($postStatuses as $ps)
                                     <button type="button"
                                         @click="outcomes[i].status = '{{ $ps->value }}'"
-                                        :style="outcomes[i].status === '{{ $ps->value }}' ? 'background:var(--bronze-100);border:1px solid var(--bronze-400);color:var(--bronze-800);font-weight:600;' : 'background:var(--surface-tertiary);border:1px solid var(--border-default);color:var(--text-primary);'"
-                                        style="min-height:44px;padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);font-size:var(--fs-13);cursor:pointer;">
+                                        class="tech-status-chip"
+                                        :class="outcomes[i].status === '{{ $ps->value }}' ? 'tech-status-chip--active' : ''">
                                         {{ $ps->label() }}
                                     </button>
                                 @endforeach
@@ -194,8 +217,7 @@
         <div class="tech-sticky-bar" style="display:flex;flex-direction:column;gap:var(--space-3);">
             <button type="button" @click="submit()"
                 :disabled="!uploadsComplete || submitting"
-                :style="(!uploadsComplete || submitting) ? 'opacity:.4;cursor:not-allowed;' : ''"
-                style="width:100%;height:56px;background:var(--bronze-700);color:#fff;font-size:var(--fs-16);font-weight:var(--weight-bold);border:none;border-radius:var(--radius-lg);cursor:pointer;">
+                class="tech-submit-btn">
                 <span x-text="submitting ? 'Submitting…' : 'Submit job'"></span>
             </button>
             <p x-show="!uploadsComplete && photos.length === 0" style="text-align:center;font-size:var(--fs-13);color:var(--text-tertiary);">

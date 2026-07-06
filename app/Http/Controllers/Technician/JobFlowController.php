@@ -9,18 +9,22 @@ use App\Enums\TechnicianJobStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\JobAssetOutcome;
+use App\Models\JobAttachment;
 use App\Models\JobCheckpoint;
 use App\Models\JobPhoto;
 use App\Models\ServiceJob;
 use App\Models\Store;
 use App\Models\TechnicianProfile;
 use App\Services\JobFlowService;
+use App\Services\TechnicianUrlService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Drives the 5-screen technician mobile workflow (EPIC-10, SRA §6).
@@ -49,7 +53,7 @@ class JobFlowController extends Controller
         [$jobModel, $profile] = $result;
 
         /** @var ServiceJob $jobModel */
-        $jobModel->load(['store', 'client', 'assets']);
+        $jobModel->load(['store', 'client', 'assets', 'attachments']);
 
         // .ics calendar data for before-photo download
         $icsContent = $this->buildIcsContent($jobModel);
@@ -92,10 +96,9 @@ class JobFlowController extends Controller
             $flowService->logGpsFailure($jobModel->id, $profile->id, $validated['gps_status']);
         }
 
-        // Redirect to Screen 2, preserving signed params
-        return redirect()->route('technician.job.before-photos', array_merge(
-            ['job' => $jobModel->id],
-            $request->only(['token', 'technician_profile_id', 'expires', 'signature'])
+        // Redirect to Screen 2 — needs a freshly signed URL for this new route path
+        return redirect()->to(app(TechnicianUrlService::class)->resignFromRequest(
+            $request, 'technician.job.before-photos', ['job' => $jobModel->id]
         ));
     }
 
@@ -111,9 +114,8 @@ class JobFlowController extends Controller
         [$jobModel, $profile] = $result;
         app(JobFlowService::class)->cancelStart($jobModel, $profile);
 
-        return redirect()->route('technician.job.overview', array_merge(
-            ['job' => $jobModel->id],
-            $request->only(['token', 'technician_profile_id', 'expires', 'signature'])
+        return redirect()->to(app(TechnicianUrlService::class)->resignFromRequest(
+            $request, 'technician.job.overview', ['job' => $jobModel->id]
         ));
     }
 
@@ -135,9 +137,8 @@ class JobFlowController extends Controller
 
         // Must have Started this job to see Screen 2
         if (! $pivotRow || $pivotRow->technician_status !== TechnicianJobStatus::Started->value) {
-            return redirect()->route('technician.job.overview', array_merge(
-                ['job' => $jobModel->id],
-                $request->only(['token', 'technician_profile_id', 'expires', 'signature'])
+            return redirect()->to(app(TechnicianUrlService::class)->resignFromRequest(
+                $request, 'technician.job.overview', ['job' => $jobModel->id]
             ));
         }
 
@@ -196,6 +197,28 @@ class JobFlowController extends Controller
         }
 
         return response()->json(['success' => true, 'new_status' => $newStatus->value, 'label' => $newStatus->label()]);
+    }
+
+    // ── PM attachment view (Screens 1 & 3) ─────────────────────────────────────
+
+    /** Serve a PM attachment inline — signed-URL scoped, no PM session required. */
+    public function viewAttachment(Request $request, string $job, string $attachment): StreamedResponse|RedirectResponse
+    {
+        $result = $this->resolveIdentity($request, $job);
+        if ($this->isExpiredRedirect($result)) {
+            return $result;
+        }
+
+        [$jobModel] = $result;
+
+        $attachmentModel = JobAttachment::find((int) $attachment);
+        abort_if(! $attachmentModel || $attachmentModel->job_id !== $jobModel->id, 404);
+
+        return Storage::disk('local')->response(
+            $attachmentModel->stored_path,
+            $attachmentModel->original_filename,
+            ['Content-Type' => $attachmentModel->mime_type]
+        );
     }
 
     // ── Screen 4 — After photos ───────────────────────────────────────────────
@@ -320,9 +343,8 @@ class JobFlowController extends Controller
             $flowService->logGpsFailure($jobModel->id, $profile->id, $validated['gps_status']);
         }
 
-        return redirect()->route('technician.job.summary', array_merge(
-            ['job' => $jobModel->id],
-            $request->only(['token', 'technician_profile_id', 'expires', 'signature'])
+        return redirect()->to(app(TechnicianUrlService::class)->resignFromRequest(
+            $request, 'technician.job.summary', ['job' => $jobModel->id]
         ));
     }
 

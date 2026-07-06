@@ -50,6 +50,27 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
+        /* Each screen's own title block (step label + h1) reuses the dark sticky
+           header treatment but needs a vertical stack, not the logo bar's flex
+           row — sharing .tech-header directly squeezed both lines onto one row
+           and could clip long job/client names. */
+        .tech-screen-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: var(--onyx-900);
+            padding: var(--space-4) var(--space-5);
+            padding-top: calc(var(--space-4) + env(safe-area-inset-top));
+        }
+
+        /* The design system's base reset (h1, h2, ... { color: var(--text-primary) })
+           is an element selector — it beats plain inheritance, so an unstyled
+           <h1> on this dark background renders dark-on-dark and disappears.
+           Match its specificity to win back the light color. */
+        .tech-screen-header h1 {
+            color: var(--onyx-50);
+        }
         .tech-main { flex: 1; padding: var(--space-5); }
         .tech-footer {
             position: sticky;

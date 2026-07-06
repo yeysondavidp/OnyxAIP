@@ -27,7 +27,7 @@
     <div class="tech-shell">
 
         {{-- Header --}}
-        <div class="tech-header">
+        <div class="tech-screen-header">
             <p style="font-size: var(--fs-12); color: var(--onyx-400); margin-bottom: var(--space-1);">Job complete</p>
             <h1 style="font-size: var(--fs-18); font-weight: var(--weight-semibold);">Summary</h1>
         </div>

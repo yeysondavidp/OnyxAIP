@@ -10,6 +10,12 @@
             cursor: pointer; min-height: 44px;
         }
         .onyx-row-selected { border-color: var(--bronze-500); background: var(--bronze-100); }
+
+        /* Grid layout lives in a class (not inline) so the Alpine :style toggle
+           below only ever sets opacity/pointer-events — an x-bind:style string
+           replaces (not merges with) a static style attribute on the same
+           element, which was wiping out the grid layout entirely. */
+        .onyx-schedule-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4); }
     </style>
 
     <x-slot:breadcrumbs>
@@ -57,9 +63,9 @@
                 },
                 isAssetSelected(id) { return this.selectedAssets.includes(id); },
                 isTechSelected(id) { return this.selectedTechs.includes(id); },
-                flexible: {{ old('is_flexible', (! $job->scheduled_date && ! $job->scheduled_time) ? '1' : '') ? 'true' : 'false' }},
+                flexible: {{ old('is_flexible', $job->is_flexible ? '1' : '') ? 'true' : 'false' }},
                 scheduledDate: '{{ old('scheduled_date', $job->scheduled_date?->format('Y-m-d')) }}',
-                scheduledTime: '{{ old('scheduled_time', $job->scheduled_time) }}',
+                scheduledTime: '{{ old('scheduled_time', $job->scheduled_time ? substr($job->scheduled_time, 0, 5) : '') }}',
                 earlyStartWindow: '{{ old('early_start_window', $job->early_start_window->value) }}',
                 setFlexible(value) {
                     this.flexible = value;
@@ -138,7 +144,7 @@
                             <span style="font-size: var(--fs-14); color: var(--text-primary);">Flexible — no fixed date or time</span>
                         </label>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4);"
+                        <div class="onyx-schedule-grid"
                             :style="flexible ? 'opacity: 0.5; pointer-events: none;' : ''">
                             <x-onyx.input name="scheduled_date" label="Scheduled date" type="date"
                                 x-model="scheduledDate" x-bind:disabled="flexible"

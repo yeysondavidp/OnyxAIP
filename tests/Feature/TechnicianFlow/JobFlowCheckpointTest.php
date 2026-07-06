@@ -8,6 +8,7 @@ use App\Enums\PostServiceStatus;
 use App\Enums\TechnicianJobStatus;
 use App\Models\Asset;
 use App\Models\Client;
+use App\Models\JobAttachment;
 use App\Models\JobCheckpoint;
 use App\Models\JobPhoto;
 use App\Models\ServiceJob;
@@ -16,7 +17,9 @@ use App\Models\TechnicianProfile;
 use App\Models\User;
 use App\Services\JobFlowService;
 use App\Services\JobInvitationService;
+use App\Services\TechnicianUrlService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -80,6 +83,120 @@ it('expired signed URL renders link-expired page', function () {
     );
 
     $this->get($expiredUrl)->assertStatus(403);
+});
+
+it('Screen 1 shows the job description and PM attachments so the tech can prep before travelling', function () {
+    [$job, $profile, $token] = setupJobAndProfile();
+    $job->update(['job_description' => 'Replace the faulty HDMI cable on screen 2.']);
+
+    JobAttachment::create([
+        'job_id'            => $job->id,
+        'original_filename' => 'site-photo.jpg',
+        'stored_path'       => 'job-attachments/'.$job->id.'/site-photo.jpg',
+        'mime_type'         => 'image/jpeg',
+        'file_size'         => 1024,
+    ]);
+
+    $signedUrl = buildSignedUrl($job, $profile, $token);
+
+    $this->get($signedUrl)
+        ->assertOk()
+        ->assertSee('Replace the faulty HDMI cable on screen 2.')
+        ->assertSee('site-photo.jpg');
+});
+
+it('technician can view a PM attachment via a signed URL without a PM session', function () {
+    Storage::fake('local');
+
+    [$job, $profile, $token] = setupJobAndProfile();
+
+    $file = UploadedFile::fake()->image('brief.jpg');
+    Storage::disk('local')->putFileAs('job-attachments/'.$job->id, $file, 'brief.jpg');
+
+    $attachment = JobAttachment::create([
+        'job_id'            => $job->id,
+        'original_filename' => 'brief.jpg',
+        'stored_path'       => 'job-attachments/'.$job->id.'/brief.jpg',
+        'mime_type'         => 'image/jpeg',
+        'file_size'         => $file->getSize(),
+    ]);
+
+    $url = URL::temporarySignedRoute(
+        'technician.job.attachment',
+        now()->addHours(72),
+        ['job' => $job->id, 'attachment' => $attachment->id, 'technician_profile_id' => $profile->id, 'token' => $token]
+    );
+
+    $this->get($url)->assertOk();
+});
+
+it('cannot view an attachment that belongs to a different job via the signed URL', function () {
+    Storage::fake('local');
+
+    [$job, $profile, $token] = setupJobAndProfile();
+    $otherJob                = ServiceJob::factory()->create();
+
+    $attachment = JobAttachment::create([
+        'job_id'            => $otherJob->id,
+        'original_filename' => 'other.jpg',
+        'stored_path'       => 'job-attachments/'.$otherJob->id.'/other.jpg',
+        'mime_type'         => 'image/jpeg',
+        'file_size'         => 1024,
+    ]);
+
+    $url = URL::temporarySignedRoute(
+        'technician.job.attachment',
+        now()->addHours(72),
+        ['job' => $job->id, 'attachment' => $attachment->id, 'technician_profile_id' => $profile->id, 'token' => $token]
+    );
+
+    $this->get($url)->assertNotFound();
+});
+
+// ── Cross-checkpoint signed URL continuity (regression) ──────────────────────
+
+it('technician can hop through every checkpoint without the link going invalid', function () {
+    Storage::fake('local');
+
+    [$job, $profile, $token] = setupJobAndProfile();
+
+    DB::table('job_technicians')
+        ->where('job_id', $job->id)
+        ->where('technician_profile_id', $profile->id)
+        ->update(['technician_status' => TechnicianJobStatus::Accepted->value]);
+
+    $signedUrl = buildSignedUrl($job, $profile, $token);
+
+    // Screen 1 → Start: POST shares the overview's URI, so the original
+    // signature is still valid here even before the fix.
+    $startResponse = $this->post($signedUrl, ['gps_status' => 'granted']);
+    $startResponse->assertRedirect();
+    $beforePhotosUrl = $startResponse->headers->get('Location');
+
+    // Screen 2: a different route path — this is where the stale-signature
+    // bug used to surface as "This link isn't valid".
+    $this->get($beforePhotosUrl)->assertOk();
+
+    // The rest of the flow re-signs from the current request the same way
+    // the Blade views do, via TechnicianUrlService::resignFromRequest().
+    $request    = Request::create($beforePhotosUrl);
+    $urlService = app(TechnicianUrlService::class);
+
+    $briefUrl = $urlService->resignFromRequest($request, 'technician.job.brief', ['job' => $job->id]);
+    $this->get($briefUrl)->assertOk();
+
+    $afterPhotosUrl = $urlService->resignFromRequest($request, 'technician.job.after-photos', ['job' => $job->id]);
+    $this->get($afterPhotosUrl)->assertOk();
+
+    // Seed the required after-photo directly — upload idempotency is covered elsewhere.
+    $file = UploadedFile::fake()->image('after.jpg', 800, 600);
+    app(JobFlowService::class)->storePhoto($job, $profile, PhotoType::After, $file, 'after-flow-continuity');
+
+    $completeUrl      = $urlService->resignFromRequest($request, 'technician.job.complete', ['job' => $job->id]);
+    $completeResponse = $this->post($completeUrl, ['gps_status' => 'skipped']);
+    $completeResponse->assertRedirect();
+
+    $this->get($completeResponse->headers->get('Location'))->assertOk();
 });
 
 // ── Start checkpoint (US-10.2) ────────────────────────────────────────────────

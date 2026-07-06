@@ -1,6 +1,9 @@
 <x-layouts.technician title="{{ $jobModel->job_name }}">
 
     @php
+        $urlService = app(\App\Services\TechnicianUrlService::class);
+        $startUrl   = $urlService->resignFromRequest(request(), 'technician.job.start', ['job' => $jobModel->id]);
+
         $tz   = $jobModel->job_timezone;
         $hasSchedule = $jobModel->scheduled_date && $jobModel->scheduled_time;
         $startUtc = $hasSchedule
@@ -29,6 +32,19 @@
         }
     @endphp
 
+    <style>
+        /* Static button look lives in a class so the :disabled pseudo-class
+           handles the gated state — an x-bind:style string replaces (not merges
+           with) a static style attribute on the same element, which was wiping
+           out the button's entire appearance whenever canStart was true. */
+        .tech-start-btn {
+            width: 100%; height: 56px; background: var(--bronze-700); color: #fff;
+            font-size: var(--fs-16); font-weight: var(--weight-bold); border: none;
+            border-radius: var(--radius-lg); cursor: pointer; letter-spacing: .01em;
+        }
+        .tech-start-btn:disabled { opacity: .4; cursor: not-allowed; }
+    </style>
+
     <div class="tech-shell"
         x-data="{
             canStart: {{ $earliestUtc ? 'new Date() >= new Date(\''.$earliestUtc.'\')' : 'true' }},
@@ -43,7 +59,7 @@
         x-init="checkWindow()">
 
         {{-- Header --}}
-        <div class="tech-header">
+        <div class="tech-screen-header">
             <p style="font-size: var(--fs-11); color: var(--onyx-400); text-transform: uppercase; letter-spacing: .06em; margin-bottom: var(--space-1);">{{ $jobModel->client?->client_name }}</p>
             <h1 style="font-size: var(--fs-18); font-weight: var(--weight-semibold);">{{ $jobModel->job_name }}</h1>
         </div>
@@ -74,6 +90,45 @@
                     </div>
                 @endif
             </div>
+
+            {{-- Job description --}}
+            @if ($jobModel->job_description)
+                <div style="margin-bottom: var(--space-4);">
+                    <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">Job description</p>
+                    <p style="font-size: var(--fs-14); color: var(--text-primary); white-space: pre-wrap; line-height: 1.6;">{{ $jobModel->job_description }}</p>
+                </div>
+            @endif
+
+            {{-- PM attachments — reference photos/briefs so the tech can plan tools before travelling --}}
+            @if ($jobModel->attachments->isNotEmpty())
+                @php
+                    $attachmentItems = $jobModel->attachments->map(fn ($a) => [
+                        'url'  => $urlService->resignFromRequest(request(), 'technician.job.attachment', ['job' => $jobModel->id, 'attachment' => $a->id]),
+                        'name' => $a->original_filename,
+                        'type' => str_starts_with($a->mime_type, 'image/') ? 'image' : 'document',
+                    ])->values();
+                @endphp
+                <div style="margin-bottom: var(--space-4);">
+                    <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">Attachments</p>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2);">
+                        @foreach ($jobModel->attachments as $i => $att)
+                            <button type="button"
+                                @click="window.dispatchEvent(new CustomEvent('onyx-lightbox:open', { detail: { items: @js($attachmentItems), index: {{ $i }} } }))"
+                                style="aspect-ratio: 1; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); background: var(--surface-primary); padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                @if ($attachmentItems[$i]['type'] === 'image')
+                                    <img src="{{ $attachmentItems[$i]['url'] }}" alt="{{ $att->original_filename }}"
+                                        style="width: 100%; height: 100%; object-fit: cover;">
+                                @else
+                                    <span style="display: flex; flex-direction: column; align-items: center; gap: var(--space-1); color: var(--text-secondary); padding: var(--space-2);">
+                                        <x-icon name="file-text" size="24" />
+                                        <span style="font-size: var(--fs-11); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">{{ $att->original_filename }}</span>
+                                    </span>
+                                @endif
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             {{-- Affected assets --}}
             @if ($jobModel->assets->isNotEmpty())
@@ -130,7 +185,7 @@
 
         {{-- Sticky Start CTA --}}
         <div class="tech-sticky-bar">
-            <form method="POST" action="{{ route('technician.job.start', array_merge(['job' => $jobModel->id], request()->only(['token', 'technician_profile_id', 'expires', 'signature']))) }}"
+            <form method="POST" action="{{ $startUrl }}"
                 @submit.prevent="
                     if (!canStart) return;
                     const form = $el;
@@ -161,13 +216,14 @@
                 <input type="hidden" name="gps_status" value="skipped">
                 <button type="submit"
                     :disabled="!canStart"
-                    :style="!canStart ? 'opacity:.4;cursor:not-allowed;' : ''"
-                    style="width: 100%; height: 56px; background: var(--bronze-700); color: #fff; font-size: var(--fs-16); font-weight: var(--weight-bold); border: none; border-radius: var(--radius-lg); cursor: pointer; letter-spacing: .01em;">
+                    class="tech-start-btn">
                     Start Job
                 </button>
             </form>
         </div>
 
     </div>
+
+    <x-onyx.lightbox />
 
 </x-layouts.technician>

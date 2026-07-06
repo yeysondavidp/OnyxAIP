@@ -114,6 +114,39 @@
                 </div>
             </x-onyx.card>
 
+            {{-- Recent Service Jobs — every visit, regardless of whether it has
+                 affected assets (the per-asset Service History log below only
+                 ever covers jobs with assets attached) --}}
+            <x-onyx.card variant="default" padding="none">
+                <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+                    <h2 style="font-size: var(--fs-15); font-weight: var(--weight-semibold); color: var(--text-primary);">Recent Service Jobs</h2>
+                </div>
+                @if ($recentJobs->isEmpty())
+                    <div style="padding: var(--space-6);">
+                        <p style="font-size: var(--fs-13); color: var(--text-tertiary);">No service jobs recorded for this store yet.</p>
+                    </div>
+                @else
+                    <div>
+                        @foreach ($recentJobs as $recentJob)
+                            <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
+                                <div>
+                                    <a href="{{ route('jobs.show', $recentJob) }}"
+                                        style="font-size: var(--fs-14); font-weight: var(--weight-medium); color: var(--text-primary); text-decoration: none;">
+                                        {{ $recentJob->job_name }}
+                                    </a>
+                                    <div style="font-size: var(--fs-12); color: var(--text-secondary); margin-top: var(--space-1);">
+                                        <span style="font-family: monospace;">{{ $recentJob->job_reference }}</span>
+                                        · {{ $recentJob->job_type->label() }}
+                                        · {{ $recentJob->updated_at?->format('d M Y') }}
+                                    </div>
+                                </div>
+                                <x-onyx.badge :tone="$recentJob->job_status->tone()" variant="soft">{{ $recentJob->job_status->label() }}</x-onyx.badge>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </x-onyx.card>
+
             {{-- Service History (US-11.4) --}}
             <x-onyx.card variant="default" padding="none">
                 <div style="padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">

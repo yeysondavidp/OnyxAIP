@@ -33,6 +33,7 @@ class UpdateServiceJobRequest extends FormRequest
             'job_name'                 => ['required', 'string', 'max:255'],
             'job_description'          => ['required', 'string', 'max:5000'],
             'job_type'                 => ['required', Rule::enum(JobType::class)],
+            'is_flexible'              => ['sometimes', 'boolean'],
             'scheduled_date'           => ['nullable', 'date_format:Y-m-d'],
             'scheduled_time'           => ['nullable', 'date_format:H:i', 'required_with:scheduled_date'],
             'early_start_window'       => ['nullable', Rule::enum(EarlyStartWindow::class)],
@@ -50,7 +51,26 @@ class UpdateServiceJobRequest extends FormRequest
         $validator->after(function (Validator $v) {
             $this->validateAssetsInStore($v);
             $this->validateTechniciansActive($v);
+            $this->validateScheduleCompleteness($v);
         });
+    }
+
+    /**
+     * A non-flexible job must have both a scheduled date and time (US-08.1).
+     */
+    private function validateScheduleCompleteness(Validator $v): void
+    {
+        if ($this->boolean('is_flexible')) {
+            return;
+        }
+
+        if (! $this->filled('scheduled_date')) {
+            $v->errors()->add('scheduled_date', 'Scheduled date is required unless this job is flexible.');
+        }
+
+        if (! $this->filled('scheduled_time')) {
+            $v->errors()->add('scheduled_time', 'Scheduled time is required unless this job is flexible.');
+        }
     }
 
     private function validateAssetsInStore(Validator $v): void

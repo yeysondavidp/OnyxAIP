@@ -6,9 +6,12 @@ use App\Enums\EarlyStartWindow;
 use App\Enums\JobStatus;
 use App\Enums\JobType;
 use App\Enums\PhotoType;
+use App\Enums\PostServiceStatus;
 use App\Models\Asset;
 use App\Models\Client;
+use App\Models\JobAssetOutcome;
 use App\Models\JobAttachment;
+use App\Models\JobCheckpoint;
 use App\Models\JobPhoto;
 use App\Models\ServiceJob;
 use App\Models\Store;
@@ -92,6 +95,7 @@ it('auto-generates a job_reference when left blank', function () {
             'job_description'    => 'Inspect all screens.',
             'job_type'           => JobType::RoutineMaintenance->value,
             'early_start_window' => EarlyStartWindow::Anytime->value,
+            'is_flexible'        => '1',
         ])
         ->assertRedirect();
 
@@ -156,6 +160,7 @@ it('client_id is derived from store and not accepted from the request', function
             'job_description'    => 'Desc.',
             'job_type'           => JobType::Survey->value,
             'early_start_window' => EarlyStartWindow::Anytime->value,
+            'is_flexible'        => '1',
         ])
         ->assertRedirect();
 
@@ -185,6 +190,7 @@ it('attaching an asset auto-transitions it to under_maintenance', function () {
             'job_description'    => 'Inspect screens.',
             'job_type'           => JobType::RoutineMaintenance->value,
             'early_start_window' => EarlyStartWindow::Anytime->value,
+            'is_flexible'        => '1',
             'asset_ids'          => [$asset->id],
         ])
         ->assertRedirect();
@@ -276,6 +282,7 @@ it('assigns technician profiles via pivot with invited status', function () {
             'job_description'        => 'Desc.',
             'job_type'               => JobType::Survey->value,
             'early_start_window'     => EarlyStartWindow::Anytime->value,
+            'is_flexible'            => '1',
             'technician_profile_ids' => [$profile->id],
         ])
         ->assertRedirect();
@@ -324,6 +331,7 @@ it('creates a sub-job inheriting parent client_id', function () {
             'job_description'    => 'Desc.',
             'job_type'           => JobType::Survey->value,
             'early_start_window' => EarlyStartWindow::Anytime->value,
+            'is_flexible'        => '1',
         ])
         ->assertRedirect();
 
@@ -400,6 +408,106 @@ it('no-level-3: child of a remediation is rejected', function () {
         ->assertSessionHasErrors('parent_job_id');
 });
 
+// ── Edit form pre-fill & flexible schedule (bug fix regressions) ──────────────
+
+it('edit form pre-fills the job description textarea', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create([
+        'job_description' => 'Replace the faulty HDMI cable on screen 2.',
+    ]);
+
+    $this->actingAs($pm)
+        ->get(route('jobs.edit', $job))
+        ->assertOk()
+        ->assertSee('Replace the faulty HDMI cable on screen 2.');
+});
+
+it('edit form pre-fills scheduled time without seconds even though the column stores them', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create([
+        'scheduled_time' => '09:00:00',
+    ]);
+
+    $response = $this->actingAs($pm)->get(route('jobs.edit', $job))->assertOk();
+
+    $response->assertSee("scheduledTime: '09:00'", false);
+    $response->assertDontSee("scheduledTime: '09:00:00'", false);
+});
+
+it('re-saving an already-scheduled job does not trip the H:i time format validation', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create([
+        'scheduled_date' => '2026-08-01',
+        'scheduled_time' => '09:00:00',
+    ]);
+
+    $this->actingAs($pm)
+        ->put(route('jobs.update', $job), [
+            'job_reference'      => $job->job_reference,
+            'job_name'           => $job->job_name,
+            'job_description'    => $job->job_description,
+            'job_type'           => $job->job_type->value,
+            'scheduled_date'     => '2026-08-01',
+            'scheduled_time'     => '09:00',
+            'early_start_window' => $job->early_start_window->value,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+});
+
+it('turning flexible off requires a date and time instead of silently saving nulls again', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create([
+        'is_flexible'    => true,
+        'scheduled_date' => null,
+        'scheduled_time' => null,
+    ]);
+
+    $this->actingAs($pm)
+        ->put(route('jobs.update', $job), [
+            'job_reference'      => $job->job_reference,
+            'job_name'           => $job->job_name,
+            'job_description'    => $job->job_description,
+            'job_type'           => $job->job_type->value,
+            'early_start_window' => $job->early_start_window->value,
+            // is_flexible omitted — PM unchecked the box but left date/time blank
+        ])
+        ->assertSessionHasErrors(['scheduled_date', 'scheduled_time']);
+
+    // Rejected, not silently saved — the job stays flexible rather than
+    // looking "stuck" because nulls were written without the flag updating.
+    expect($job->fresh()->is_flexible)->toBeTrue();
+});
+
+it('flexible flag persists explicitly instead of being re-derived from null date/time', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create([
+        'scheduled_date' => '2026-08-01',
+        'scheduled_time' => '09:00:00',
+    ]);
+
+    $this->actingAs($pm)
+        ->put(route('jobs.update', $job), [
+            'job_reference'      => $job->job_reference,
+            'job_name'           => $job->job_name,
+            'job_description'    => $job->job_description,
+            'job_type'           => $job->job_type->value,
+            'early_start_window' => $job->early_start_window->value,
+            'is_flexible'        => '1',
+        ])
+        ->assertRedirect();
+
+    $fresh = $job->fresh();
+    expect($fresh->is_flexible)->toBeTrue();
+    expect($fresh->scheduled_date)->toBeNull();
+    expect($fresh->scheduled_time)->toBeNull();
+});
+
 // ── Show (US-08.7 scope guard) ────────────────────────────────────────────────
 
 it('pm can view a job detail page', function () {
@@ -411,6 +519,59 @@ it('pm can view a job detail page', function () {
         ->get(route('jobs.show', $job))
         ->assertOk()
         ->assertSee($job->job_name);
+});
+
+it('job page keeps showing visit evidence after the job is validated', function () {
+    Storage::fake('local');
+
+    $pm      = User::factory()->pm()->create();
+    $store   = Store::factory()->create();
+    $client  = Client::find($store->client_id);
+    $job     = ServiceJob::factory()->forClient($client, $store)->validated()->create();
+    $profile = TechnicianProfile::factory()->create(['name' => 'Jordan Tech']);
+    $asset   = Asset::factory()->create([
+        'store_id'   => $store->id,
+        'client_id'  => $client->id,
+        'asset_type' => AssetType::DigitalScreen->value,
+    ]);
+    $job->assets()->attach($asset->id);
+
+    JobCheckpoint::create([
+        'job_id'                => $job->id,
+        'technician_profile_id' => $profile->id,
+        'start_timestamp_utc'   => now()->subHour(),
+        'end_timestamp_utc'     => now(),
+        'start_gps_status'      => 'granted',
+        'end_gps_status'        => 'granted',
+        'completion_notes'      => 'Replaced the faulty HDMI cable.',
+    ]);
+
+    $file = UploadedFile::fake()->image('after.jpg');
+    Storage::disk('local')->putFileAs('job-photos/'.$job->id.'/'.$profile->id.'/after', $file, 'after.jpg');
+    JobPhoto::create([
+        'job_id'                => $job->id,
+        'technician_profile_id' => $profile->id,
+        'type'                  => PhotoType::After->value,
+        'stored_path'           => 'job-photos/'.$job->id.'/'.$profile->id.'/after/after.jpg',
+        'mime_type'             => 'image/jpeg',
+        'file_size'             => $file->getSize(),
+        'client_upload_id'      => 'evidence-test-1',
+    ]);
+
+    JobAssetOutcome::create([
+        'job_id'              => $job->id,
+        'asset_id'            => $asset->id,
+        'post_service_status' => PostServiceStatus::Active->value,
+        'technician_notes'    => 'Screen back online after the swap.',
+    ]);
+
+    $this->actingAs($pm)
+        ->get(route('jobs.show', $job))
+        ->assertOk()
+        ->assertSee('Visit evidence')
+        ->assertSee('Jordan Tech')
+        ->assertSee('Replaced the faulty HDMI cable.')
+        ->assertSee('Screen back online after the swap.');
 });
 
 // ── In-platform attachment/photo preview ──────────────────────────────────────

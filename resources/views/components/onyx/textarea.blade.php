@@ -19,6 +19,7 @@
     'error'  => null,
     'rows'   => 4,
     'id'     => null,
+    'value'  => null,
 ])
 
 @php
@@ -53,7 +54,7 @@ $stateClass = $error ? 'onyx-input--error' : '';
       rows="{{ $rows }}"
       style="padding: 11px 14px; font-size: var(--fs-16); resize: vertical; min-height: 90px;"
       {{ $attributes->except(['class']) }}
-    >{{ $slot }}</textarea>
+    >{{ $slot->isNotEmpty() ? $slot : $value }}</textarea>
   </div>
 
   @if ($error)

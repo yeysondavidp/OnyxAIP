@@ -242,6 +242,11 @@ Route::middleware(['signed', 'throttle:guest.job'])->group(function () {
     Route::post('/job/{job}/assets/{asset}/status', [JobFlowController::class, 'updateAssetStatus'])
         ->name('technician.job.asset-status');
 
+    // PM attachment view — signed-URL scoped, so the technician can review
+    // reference photos/briefs without needing a PM-authenticated session
+    Route::get('/job/{job}/attachments/{attachment}', [JobFlowController::class, 'viewAttachment'])
+        ->name('technician.job.attachment');
+
     // Screen 4 — After photos & outcomes
     Route::get('/job/{job}/after-photos', [JobFlowController::class, 'afterPhotos'])
         ->name('technician.job.after-photos');

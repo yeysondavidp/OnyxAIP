@@ -1,16 +1,31 @@
 <x-layouts.technician title="Brief — {{ $jobModel->job_name }}">
 
     @php
-        $signedParams    = request()->only(['token', 'technician_profile_id', 'expires', 'signature']);
-        $afterPhotosUrl  = route('technician.job.after-photos', array_merge(['job' => $jobModel->id], $signedParams));
-        $assetStatusBase = route('technician.job.asset-status', array_merge(['job' => $jobModel->id, 'asset' => '__ASSET_ID__'], $signedParams));
+        $urlService      = app(\App\Services\TechnicianUrlService::class);
+        $afterPhotosUrl  = $urlService->resignFromRequest(request(), 'technician.job.after-photos', ['job' => $jobModel->id]);
+        $assetStatusBase = $urlService->resignFromRequest(request(), 'technician.job.asset-status', ['job' => $jobModel->id, 'asset' => '__ASSET_ID__']);
         $csrfToken       = csrf_token();
     @endphp
+
+    <style>
+        /* Static styling lives in classes, with only the selected state toggled
+           via :class — an x-bind:style string replaces (not merges with) a
+           static style attribute on the same element, which was wiping out the
+           base look (size, padding, radius) in every state. */
+        .tech-status-chip {
+            min-height: 44px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+            font-size: var(--fs-13); cursor: pointer;
+            background: var(--surface-tertiary); border: 1px solid var(--border-default); color: var(--text-primary);
+        }
+        .tech-status-chip--active {
+            background: var(--bronze-100); border: 1px solid var(--bronze-400); color: var(--bronze-800); font-weight: 600;
+        }
+    </style>
 
     <div class="tech-shell">
 
         {{-- Header --}}
-        <div class="tech-header">
+        <div class="tech-screen-header">
             <p style="font-size: var(--fs-12); color: var(--onyx-400); margin-bottom: var(--space-1);">Step 2 of 4</p>
             <h1 style="font-size: var(--fs-18); font-weight: var(--weight-semibold);">Job brief</h1>
         </div>
@@ -37,7 +52,7 @@
                 <div>
                     <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">Attachments</p>
                     @foreach ($jobModel->attachments as $att)
-                        <a href="{{ route('jobs.attachments.download', [$jobModel, $att]) }}"
+                        <a href="{{ $urlService->resignFromRequest(request(), 'technician.job.attachment', ['job' => $jobModel->id, 'attachment' => $att->id]) }}"
                             target="_blank"
                             style="display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); background: var(--surface-primary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: var(--space-2); text-decoration: none; min-height: 44px;">
                             <span style="font-size: var(--fs-13); color: var(--text-primary);">{{ $att->original_filename }}</span>
@@ -96,8 +111,8 @@
                                                     .catch(() => { updateError = 'Update failed. Try again.'; updating = false; })
                                                 "
                                                 :disabled="updating || status === '{{ $s->value }}'"
-                                                style="min-height: 44px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--fs-13); cursor: pointer;"
-                                                :style="status === '{{ $s->value }}' ? 'background: var(--bronze-100); border: 1px solid var(--bronze-400); color: var(--bronze-800); font-weight:600;' : 'background: var(--surface-tertiary); border: 1px solid var(--border-default); color: var(--text-primary);'">
+                                                class="tech-status-chip"
+                                                :class="status === '{{ $s->value }}' ? 'tech-status-chip--active' : ''">
                                                 {{ $s->label() }}
                                             </button>
                                         @endif

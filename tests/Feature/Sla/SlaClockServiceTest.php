@@ -25,6 +25,7 @@ it('starts the sla clock when a fault job is created against a client with an ac
             'job_description'    => 'Screen not powering on.',
             'job_type'           => JobType::FaultRepair->value,
             'early_start_window' => EarlyStartWindow::Anytime->value,
+            'is_flexible'        => '1',
         ])
         ->assertRedirect();
 
@@ -52,6 +53,7 @@ it('does not start the sla clock for a non-fault job', function () {
             'job_description'    => 'Quarterly inspection.',
             'job_type'           => JobType::RoutineMaintenance->value,
             'early_start_window' => EarlyStartWindow::Anytime->value,
+            'is_flexible'        => '1',
         ])
         ->assertRedirect();
 
@@ -73,6 +75,7 @@ it('does not start the sla clock when the client has no sla profile', function (
             'job_description'    => 'No power.',
             'job_type'           => JobType::FaultRepair->value,
             'early_start_window' => EarlyStartWindow::Anytime->value,
+            'is_flexible'        => '1',
         ])
         ->assertRedirect();
 
