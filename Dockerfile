@@ -23,6 +23,7 @@ FROM php:8.3-fpm-alpine AS runtime
 
 # ---- system deps + PHP extensions -------------------------
 RUN apk add --no-cache \
+        $PHPIZE_DEPS \
         bash \
         git \
         unzip \
