@@ -81,14 +81,37 @@ jobs:
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
           onyx-aip:test ./vendor/bin/phpstan analyse --memory-limit=1G
 
+      # mysql:8.0 defaults new users to caching_sha2_password. Alpine's
+      # mysql-client package is actually MariaDB's client under the hood,
+      # which doesn't ship that plugin's .so file ("ERROR 1045: Plugin
+      # caching_sha2_password could not be loaded") — confirmed by hand,
+      # not guessed. PHP's own PDO driver (mysqlnd) implements the plugin
+      # natively and isn't affected, but switching the CI user to the
+      # universally-compatible mysql_native_password removes any doubt.
+      - name: Switch MySQL auth plugin to mysql_native_password
+        run: |
+          cat > fix-mysql-auth.php <<'PHP'
+          <?php
+          $pdo = new PDO('mysql:host=127.0.0.1;port=3306', 'root', 'root');
+          $pdo->exec("ALTER USER 'onyx_aip'@'%' IDENTIFIED WITH mysql_native_password BY 'secret'");
+          $pdo->exec('FLUSH PRIVILEGES');
+          echo "OK\n";
+          PHP
+          docker run --rm --network host -v ${{ github.workspace }}/fix-mysql-auth.php:/tmp/fix-mysql-auth.php:ro onyx-aip:test php /tmp/fix-mysql-auth.php
+
       # Fails fast and clearly if the container can't actually reach the
       # mysql service over --network host, instead of leaving Pest to hang
-      # ambiguously (mysql client is already in the runtime image).
+      # ambiguously. Uses PHP's own PDO driver — the same one Laravel uses —
+      # not the system mysql CLI, which is unreliable in this image (above).
       - name: Verify DB connectivity
         timeout-minutes: 1
-        run: >
-          docker run --rm --network host
-          onyx-aip:test mysql -h127.0.0.1 -P3306 -uonyx_aip -psecret -e "SELECT 1"
+        run: |
+          cat > verify-db.php <<'PHP'
+          <?php
+          new PDO('mysql:host=127.0.0.1;port=3306;dbname=onyx_aip_test', 'onyx_aip', 'secret');
+          echo "OK\n";
+          PHP
+          docker run --rm --network host -v ${{ github.workspace }}/verify-db.php:/tmp/verify-db.php:ro onyx-aip:test php /tmp/verify-db.php
 
       - name: Tests (Pest)
         timeout-minutes: 10
