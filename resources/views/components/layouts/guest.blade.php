@@ -18,7 +18,7 @@
 
         {{-- Logo --}}
         <div style="text-align: center; margin-bottom: var(--space-10);">
-            <img src="{{ asset('images/onyx/mark-light.svg') }}" alt="ONYX" style="width: 48px; height: auto; margin: 0 auto var(--space-4);">
+            <img src="{{ asset('images/onyx/wordmark-light.svg') }}" alt="ONYX" style="height: 32px; width: auto; margin: 0 auto var(--space-4);">
             <p style="font-size: var(--fs-12); color: var(--onyx-400); text-transform: uppercase; letter-spacing: var(--tracking-wider); font-weight: var(--weight-medium);">
                 Asset Intelligence Platform
             </p>

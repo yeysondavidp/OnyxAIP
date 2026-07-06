@@ -40,7 +40,7 @@
             align-items: center;
             gap: var(--space-3);
         }
-        .tech-header__logo { height: 18px; width: auto; }
+        .tech-header__logo { height: 20px; width: auto; }
         .tech-header__title {
             flex: 1;
             font-size: var(--fs-14);
@@ -88,7 +88,7 @@
 <div class="tech-shell">
 
     <header class="tech-header">
-        <img src="{{ asset('images/onyx/mark-light.svg') }}" alt="ONYX" class="tech-header__logo">
+        <img src="{{ asset('images/onyx/wordmark-light.svg') }}" alt="ONYX" class="tech-header__logo">
 
         @isset($headerTitle)
             <span class="tech-header__title">{{ $headerTitle }}</span>
