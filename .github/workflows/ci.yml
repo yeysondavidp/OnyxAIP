@@ -78,7 +78,7 @@ jobs:
           docker run --rm --network host
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
-          onyx-aip:test ./vendor/bin/phpstan analyse
+          onyx-aip:test ./vendor/bin/phpstan analyse --memory-limit=1G
 
       - name: Tests (Pest)
         run: >
