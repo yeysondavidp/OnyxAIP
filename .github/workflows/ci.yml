@@ -9,6 +9,7 @@ jobs:
   test:
     name: Build image · Pint · Larastan · Pest (Docker)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       mysql:
@@ -80,7 +81,17 @@ jobs:
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
           onyx-aip:test ./vendor/bin/phpstan analyse --memory-limit=1G
 
+      # Fails fast and clearly if the container can't actually reach the
+      # mysql service over --network host, instead of leaving Pest to hang
+      # ambiguously (mysql client is already in the runtime image).
+      - name: Verify DB connectivity
+        timeout-minutes: 1
+        run: >
+          docker run --rm --network host
+          onyx-aip:test mysql -h127.0.0.1 -P3306 -uonyx_aip -psecret -e "SELECT 1"
+
       - name: Tests (Pest)
+        timeout-minutes: 10
         run: >
           docker run --rm --network host
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
