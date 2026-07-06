@@ -74,7 +74,9 @@ COPY . .
 COPY --from=assets /build/public/build ./public/build
 
 # ---- storage dirs + permissions ----------------------------
-RUN mkdir -p storage/framework/{cache,sessions,views} \
+RUN mkdir -p storage/framework/cache \
+             storage/framework/sessions \
+             storage/framework/views \
              storage/logs \
              bootstrap/cache \
     && chown -R app:app storage bootstrap/cache \
