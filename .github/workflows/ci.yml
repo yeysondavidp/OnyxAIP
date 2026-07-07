@@ -121,7 +121,7 @@ jobs:
       # past 10 minutes there while finishing in ~100-105s here), so this
       # needs real headroom rather than a tight leash.
       - name: Tests (Pest)
-        timeout-minutes: 15
+        timeout-minutes: 30
         run: >
           docker run --rm --network host
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
