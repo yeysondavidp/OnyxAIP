@@ -113,17 +113,18 @@ jobs:
           PHP
           docker run --rm --network host -v ${{ github.workspace }}/verify-db.php:/tmp/verify-db.php:ro onyx-aip:test php /tmp/verify-db.php
 
-      # The first RefreshDatabase-using test pays a one-time migration cost
-      # against a fresh MySQL container, then every subsequent test is fast —
-      # confirmed via a full local reproduction (Docker/Colima): 330 tests in
-      # 135.89s, not a hang. That migration cost is 5-10x slower on GitHub's
-      # actual runners than locally (confirmed: identical setup times out
-      # past 10 minutes there while finishing in ~100-105s here), so this
-      # needs real headroom rather than a tight leash.
+      # Locally (Docker/Colima) the full 330-test suite passes in 135.89s
+      # with one one-time migration cost. In GitHub's actual environment the
+      # same setup instead spent ~12 minutes before AssetCrudTest genuinely
+      # FAILED (not just ran slow) — but the run got killed by the timeout
+      # before Pest could print *why*, since exception detail is only
+      # printed in the final report. --stop-on-failure exits right at the
+      # first real failure so we see that detail without waiting on
+      # however long the rest of the ~40 files would take.
       - name: Tests (Pest)
-        timeout-minutes: 30
+        timeout-minutes: 20
         run: >
           docker run --rm --network host
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
-          onyx-aip:test ./vendor/bin/pest --ci
+          onyx-aip:test ./vendor/bin/pest --ci --stop-on-failure
