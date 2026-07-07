@@ -56,7 +56,7 @@ services:
     # every boot — mounting app_public over public/ would otherwise leave
     # nginx serving whatever was there from a previous image (see app_public
     # below), including on a redeploy where the Vite build actually changed.
-    command: sh -c "find /var/www/html/public -mindepth 1 -delete && cp -a /opt/public-dist/. /var/www/html/public/ && exec php-fpm"
+    command: sh -c "find /var/www/html/public -mindepth 1 -delete; cp -a /opt/public-dist/. /var/www/html/public/; exec php-fpm"
     env_file: .env
     environment:
       REDIS_HOST: redis

@@ -90,7 +90,7 @@ RUN mkdir -p storage/framework/cache \
              storage/framework/views \
              storage/logs \
              bootstrap/cache \
-    && chown -R app:app storage bootstrap/cache vendor /opt/public-dist \
+    && chown -R app:app storage bootstrap/cache vendor public /opt/public-dist \
     && chmod -R 755 storage bootstrap/cache
 
 # ---- php-fpm runs as app user ------------------------------
