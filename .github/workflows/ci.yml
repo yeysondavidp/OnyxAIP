@@ -113,18 +113,20 @@ jobs:
           PHP
           docker run --rm --network host -v ${{ github.workspace }}/verify-db.php:/tmp/verify-db.php:ro onyx-aip:test php /tmp/verify-db.php
 
-      # Pest's first RefreshDatabase-using test runs `migrate:fresh` itself
-      # (all Unit tests pass instantly — no DB — then it hangs the full 10
-      # minutes right where Feature tests start). Isolating the migration
-      # step on its own with a tight timeout narrows down whether it's
-      # genuinely the migration process hanging, vs something later in
-      # Pest/RefreshDatabase's own wrapping.
-      - name: Run migrations (isolated diagnostic)
-        timeout-minutes: 3
+      # migrate:fresh with --force succeeded standalone, ruling out the
+      # migration process itself. Pest's RefreshDatabase calls migrate:fresh
+      # internally WITHOUT --force, though — if the app doesn't resolve to a
+      # non-production environment for any reason, Laravel's
+      # confirmToProceed() falls back to an interactive Prompts confirm(),
+      # which hangs forever with no TTY attached. This reproduces that exact
+      # call (no --force) in isolation, with a tight timeout, to prove or
+      # rule out that theory directly instead of guessing further.
+      - name: Run migrations without --force (isolated diagnostic)
+        timeout-minutes: 1
         run: >
           docker run --rm --network host
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
-          onyx-aip:test php artisan migrate:fresh --force -v
+          onyx-aip:test php artisan migrate:fresh -v
 
       - name: Tests (Pest)
         timeout-minutes: 10
