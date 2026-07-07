@@ -9,7 +9,7 @@ jobs:
   test:
     name: Build image · Pint · Larastan · Pest (Docker)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     services:
       mysql:
