@@ -84,10 +84,10 @@ jobs:
       # mysql:8.0 defaults new users to caching_sha2_password. Alpine's
       # mysql-client package is actually MariaDB's client under the hood,
       # which doesn't ship that plugin's .so file ("ERROR 1045: Plugin
-      # caching_sha2_password could not be loaded") — confirmed by hand,
-      # not guessed. PHP's own PDO driver (mysqlnd) implements the plugin
-      # natively and isn't affected, but switching the CI user to the
-      # universally-compatible mysql_native_password removes any doubt.
+      # caching_sha2_password could not be loaded"). PHP's own PDO driver
+      # (mysqlnd) implements the plugin natively and isn't affected, but
+      # switching the CI user to the universally-compatible
+      # mysql_native_password removes any doubt for anything that shells out.
       - name: Switch MySQL auth plugin to mysql_native_password
         run: |
           cat > fix-mysql-auth.php <<'PHP'
@@ -100,7 +100,7 @@ jobs:
           docker run --rm --network host -v ${{ github.workspace }}/fix-mysql-auth.php:/tmp/fix-mysql-auth.php:ro onyx-aip:test php /tmp/fix-mysql-auth.php
 
       # Fails fast and clearly if the container can't actually reach the
-      # mysql service over --network host, instead of leaving Pest to hang
+      # mysql service over --network host, instead of leaving Pest to fail
       # ambiguously. Uses PHP's own PDO driver — the same one Laravel uses —
       # not the system mysql CLI, which is unreliable in this image (above).
       - name: Verify DB connectivity
@@ -113,39 +113,10 @@ jobs:
           PHP
           docker run --rm --network host -v ${{ github.workspace }}/verify-db.php:/tmp/verify-db.php:ro onyx-aip:test php /tmp/verify-db.php
 
-      # migrate:fresh with --force succeeded standalone, ruling out the
-      # migration process itself. Pest's RefreshDatabase calls migrate:fresh
-      # internally WITHOUT --force, though — if the app doesn't resolve to a
-      # non-production environment for any reason, Laravel's
-      # confirmToProceed() falls back to an interactive Prompts confirm(),
-      # which hangs forever with no TTY attached. This reproduces that exact
-      # call (no --force) in isolation, with a tight timeout, to prove or
-      # rule out that theory directly instead of guessing further.
-      - name: Run migrations without --force (isolated diagnostic)
-        timeout-minutes: 1
-        run: >
-          docker run --rm --network host
-          -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
-          onyx-aip:test php artisan migrate:fresh -v
-
-      # migrate:fresh succeeds fine standalone, with or without --force, and
-      # even a single already-passing-locally Feature file hangs the same
-      # way through Pest — ruling out the migration command, RefreshDatabase,
-      # a specific test, and a stdin/TTY issue (tried -i < /dev/null, no
-      # change). Every run's log shows an identical "mkdir(): Permission
-      # denied" warning from pest-plugin-mutate's cache dir right before the
-      # stall — vendor/ is root-owned (every RUN before `USER app` executes
-      # as root), so this failed write is real regardless of whether it's
-      # the actual cause. Fixed the ownership in the Dockerfile; this step
-      # re-tests the same single file to see if that was it.
-      - name: Run one Feature test file via Pest (isolated diagnostic)
-        timeout-minutes: 2
-        run: >
-          docker run --rm --network host
-          -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
-          -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
-          onyx-aip:test ./vendor/bin/pest tests/Feature/Assets/AssetCrudTest.php --ci
-
+      # The first RefreshDatabase-using test pays a one-time migration cost
+      # (~100-150s against a fresh MySQL container — confirmed reproducible
+      # locally via Docker, not a hang), then every subsequent test is fast;
+      # 10 minutes covers that with plenty of margin.
       - name: Tests (Pest)
         timeout-minutes: 10
         run: >
