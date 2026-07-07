@@ -11,30 +11,41 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
-    services:
-      # --tmpfs puts the datadir in RAM: with innodb_flush_log_at_trx_commit=1 and
-      # sync_binlog=1 (this image's defaults), every DDL statement is an fsync'd
-      # commit, and migrate:fresh's ~150 individual ALTER/CREATE statements cost
-      # ~100s+ on real disk — RAM makes those fsyncs free instead of relaxing
-      # durability settings we'd otherwise need to override via a mounted my.cnf
-      # (not possible here: services start before actions/checkout@v4).
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: onyx_aip_test
-          MYSQL_USER: onyx_aip
-          MYSQL_PASSWORD: secret
-        ports: ["3306:3306"]
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-          --tmpfs /var/lib/mysql:rw,noexec,nosuid,size=1024m
-
     steps:
       - uses: actions/checkout@v4
+
+      # MySQL was a `services:` container, but Tests (Pest) hung for exactly 12
+      # minutes on GitHub's hosted runner even with --tmpfs added to its options —
+      # while the identical image/flags run clean in 130s in an exact local repro
+      # of this whole workflow (docker build + this same docker run invocation).
+      # That points at services:/options: itself on the hosted runner, not disk
+      # speed, so MySQL is started manually here instead — matching how every
+      # other tool in this job already runs via `docker run` rather than
+      # `services:`. Remember to update "Stop MySQL" at the bottom if this changes.
+      - name: Start MySQL
+        run: |
+          docker run -d --name mysql --network host \
+            -e MYSQL_ROOT_PASSWORD=root \
+            -e MYSQL_DATABASE=onyx_aip_test \
+            -e MYSQL_USER=onyx_aip \
+            -e MYSQL_PASSWORD=secret \
+            --tmpfs /var/lib/mysql:rw,noexec,nosuid,size=1024m \
+            --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=5s --health-retries=10 \
+            mysql:8.0
+
+          echo "Waiting for MySQL to become healthy..."
+          for i in $(seq 1 60); do
+            health=$(docker inspect --format='{{.State.Health.Status}}' mysql)
+            if [ "$health" = "healthy" ]; then
+              echo "MySQL is healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "MySQL did not become healthy in time" >&2
+          docker logs mysql
+          exit 1
 
       # Builds the same multi-stage Dockerfile used for deployment (ADR-002),
       # through its `test` stage — this validates the Node asset build and the
@@ -133,3 +144,10 @@ jobs:
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
           onyx-aip:test ./vendor/bin/pest --ci --stop-on-failure
+
+      # GitHub Actions only auto-stops `services:` containers; since MySQL is
+      # started manually above, it needs its own teardown. if: always() so this
+      # still runs when an earlier step (e.g. Tests (Pest)) fails.
+      - name: Stop MySQL
+        if: always()
+        run: docker rm -f mysql || true
