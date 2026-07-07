@@ -113,6 +113,19 @@ jobs:
           PHP
           docker run --rm --network host -v ${{ github.workspace }}/verify-db.php:/tmp/verify-db.php:ro onyx-aip:test php /tmp/verify-db.php
 
+      # Pest's first RefreshDatabase-using test runs `migrate:fresh` itself
+      # (all Unit tests pass instantly — no DB — then it hangs the full 10
+      # minutes right where Feature tests start). Isolating the migration
+      # step on its own with a tight timeout narrows down whether it's
+      # genuinely the migration process hanging, vs something later in
+      # Pest/RefreshDatabase's own wrapping.
+      - name: Run migrations (isolated diagnostic)
+        timeout-minutes: 3
+        run: >
+          docker run --rm --network host
+          -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
+          onyx-aip:test php artisan migrate:fresh --force -v
+
       - name: Tests (Pest)
         timeout-minutes: 10
         run: >
