@@ -9,7 +9,7 @@ jobs:
   test:
     name: Build image · Pint · Larastan · Pest (Docker)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     services:
       mysql:
@@ -114,11 +114,14 @@ jobs:
           docker run --rm --network host -v ${{ github.workspace }}/verify-db.php:/tmp/verify-db.php:ro onyx-aip:test php /tmp/verify-db.php
 
       # The first RefreshDatabase-using test pays a one-time migration cost
-      # (~100-150s against a fresh MySQL container — confirmed reproducible
-      # locally via Docker, not a hang), then every subsequent test is fast;
-      # 10 minutes covers that with plenty of margin.
+      # against a fresh MySQL container, then every subsequent test is fast —
+      # confirmed via a full local reproduction (Docker/Colima): 330 tests in
+      # 135.89s, not a hang. That migration cost is 5-10x slower on GitHub's
+      # actual runners than locally (confirmed: identical setup times out
+      # past 10 minutes there while finishing in ~100-105s here), so this
+      # needs real headroom rather than a tight leash.
       - name: Tests (Pest)
-        timeout-minutes: 10
+        timeout-minutes: 15
         run: >
           docker run --rm --network host
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
