@@ -34,7 +34,7 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "127.0.0.1:${APP_PORT:-8080}:80"
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - app_storage:/var/www/html/storage/app:ro   # read-only: serves nothing directly (see conf)
@@ -132,9 +132,14 @@ services:
 # ----------------------------------------------------------------
 volumes:
   app_storage:
-    # Photos + generated PDFs/QR labels. Mount a host path in production:
-    # driver: local
-    # driver_opts: { type: none, o: bind, device: /data/onyx-aip/storage }
+    # Photos + generated PDFs/QR labels — bind-mounted so they survive a
+    # container recreate. Path matches this host's /srv/docker/<project>
+    # convention (see /srv/docker/onyx/storage for the onyx-vein sibling).
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${STORAGE_PATH:-/srv/docker/onyx-aip/storage}
   redis_data:
     # AOF persistence — queued jobs survive a restart
 
