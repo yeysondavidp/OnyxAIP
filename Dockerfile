@@ -73,41 +73,57 @@ COPY . .
 # ---- compiled assets from stage 1 -------------------------
 COPY --from=assets /build/public/build ./public/build
 
-# ---- snapshot public/ for nginx's shared volume -------------
-# nginx has no copy of public/ (Vite build included) at all — it's only
-# ever baked into this image. docker-compose.yml's `app` command re-syncs
-# this snapshot into the shared app_public volume on every boot, so a
-# stale/empty volume from a previous image build never serves old assets.
-RUN cp -a public /opt/public-dist
-
 # ---- storage dirs + permissions ----------------------------
 # vendor/ is included since every RUN before this point (including
 # composer install above) executes as root by default — php-fpm runs
 # as `app` below, and some packages need to write into their own
 # vendor subdirectory (e.g. cache dirs) even outside of testing.
-RUN mkdir -p storage/framework/cache \
+RUN mkdir -p storage/app/private \
+             storage/app/public \
+             storage/framework/cache/data \
              storage/framework/sessions \
              storage/framework/views \
              storage/logs \
              bootstrap/cache \
-    && chown -R app:app storage bootstrap/cache vendor public /opt/public-dist \
+    && chown -R app:app storage bootstrap/cache vendor \
     && chmod -R 755 storage bootstrap/cache
 
 # ---- php-fpm runs as app user ------------------------------
 RUN sed -i 's/user = www-data/user = app/' /usr/local/etc/php-fpm.d/www.conf \
     && sed -i 's/group = www-data/group = app/' /usr/local/etc/php-fpm.d/www.conf
 
+# ---- entrypoint: storage skeleton, opt-in migrations/seeders on
+# the app role only, cache warming (see docker/entrypoint.sh) -----
+COPY docker/entrypoint.sh /usr/local/bin/onyx-aip-entrypoint
+RUN chmod +x /usr/local/bin/onyx-aip-entrypoint
+
 USER app
 
 EXPOSE 9000
 
+ENTRYPOINT ["onyx-aip-entrypoint"]
 CMD ["php-fpm"]
 
 
 # ============================================================
-# Stage 3 — CI test image: adds dev dependencies (Pint/Larastan/
+# Stage 3 — nginx: serves public/ (Vite build included), proxies
+# PHP requests to app:9000. Baking public/ in here instead of a
+# shared volume means every redeploy ships exactly what this image
+# build produced — no stale-volume risk, no sync step needed.
+# ============================================================
+FROM nginx:alpine AS nginx
+
+COPY --from=runtime /var/www/html/public /var/www/html/public
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+
+# ============================================================
+# Stage 4 — CI test image: adds dev dependencies (Pint/Larastan/
 # Pest) on top of the runtime image. Never shipped to production —
-# docker-compose.yml pins every service to the `runtime` target.
+# docker-compose.yml pins the app/queue/scheduler services to the
+# `runtime` target and nginx to the `nginx` target above.
 # `tests/` is excluded by .dockerignore to keep the runtime image
 # lean, so CI bind-mounts it in at `docker run` time instead of
 # baking it into this layer.

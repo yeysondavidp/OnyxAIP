@@ -10,11 +10,11 @@ storage/framework/sessions
 storage/framework/views
 storage/logs
 storage/app/public
+bootstrap/cache/*.php
 database/database.sqlite
 .env
 .env.*
 !.env.example
-docker/nginx
 docker/redis
 docker/mysql
 docker/docs

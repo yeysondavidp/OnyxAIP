@@ -1,0 +1,34 @@
+# docker-compose.override.yml.example
+#
+# Copy to docker-compose.override.yml (gitignored) for local Docker development.
+# docker-compose.yml references ghcr.io images and has no build: directives so that
+# the server deploy is a plain `pull + up`. This file restores local builds.
+#
+# Usage:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   docker compose build
+#   docker compose up -d
+#
+# The override is also the right place for local-only tweaks (port exposure,
+# bind-mounting source for faster iteration, etc.).
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+
+  nginx:
+    build:
+      context: .
+      target: nginx
+
+  queue:
+    build:
+      context: .
+      target: runtime
+
+  scheduler:
+    build:
+      context: .
+      target: runtime
