@@ -74,12 +74,16 @@ COPY . .
 COPY --from=assets /build/public/build ./public/build
 
 # ---- storage dirs + permissions ----------------------------
+# vendor/ is included since every RUN before this point (including
+# composer install above) executes as root by default — php-fpm runs
+# as `app` below, and some packages need to write into their own
+# vendor subdirectory (e.g. cache dirs) even outside of testing.
 RUN mkdir -p storage/framework/cache \
              storage/framework/sessions \
              storage/framework/views \
              storage/logs \
              bootstrap/cache \
-    && chown -R app:app storage bootstrap/cache \
+    && chown -R app:app storage bootstrap/cache vendor \
     && chmod -R 755 storage bootstrap/cache
 
 # ---- php-fpm runs as app user ------------------------------
@@ -104,5 +108,6 @@ CMD ["php-fpm"]
 FROM runtime AS test
 
 USER root
-RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader
+RUN composer install --no-interaction --no-scripts --prefer-dist --optimize-autoloader \
+    && chown -R app:app vendor
 USER app
