@@ -12,6 +12,12 @@ jobs:
     timeout-minutes: 35
 
     services:
+      # --tmpfs puts the datadir in RAM: with innodb_flush_log_at_trx_commit=1 and
+      # sync_binlog=1 (this image's defaults), every DDL statement is an fsync'd
+      # commit, and migrate:fresh's ~150 individual ALTER/CREATE statements cost
+      # ~100s+ on real disk — RAM makes those fsyncs free instead of relaxing
+      # durability settings we'd otherwise need to override via a mounted my.cnf
+      # (not possible here: services start before actions/checkout@v4).
       mysql:
         image: mysql:8.0
         env:
@@ -25,6 +31,7 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+          --tmpfs /var/lib/mysql:rw,noexec,nosuid,size=1024m
 
     steps:
       - uses: actions/checkout@v4
@@ -113,14 +120,12 @@ jobs:
           PHP
           docker run --rm --network host -v ${{ github.workspace }}/verify-db.php:/tmp/verify-db.php:ro onyx-aip:test php /tmp/verify-db.php
 
-      # Locally (Docker/Colima) the full 330-test suite passes in 135.89s
-      # with one one-time migration cost. In GitHub's actual environment the
-      # same setup instead spent ~12 minutes before AssetCrudTest genuinely
-      # FAILED (not just ran slow) — but the run got killed by the timeout
-      # before Pest could print *why*, since exception detail is only
-      # printed in the final report. --stop-on-failure exits right at the
-      # first real failure so we see that detail without waiting on
-      # however long the rest of the ~40 files would take.
+      # Root cause of the earlier ~12min hang/timeout here (see mysql service
+      # comment above): RefreshDatabase's one-time migrate:fresh issues ~150
+      # individual DDL statements, each an fsync'd commit against real disk —
+      # not a genuine test failure. --tmpfs on the mysql service should fix
+      # the timing; --stop-on-failure is kept so a real failure still surfaces
+      # fast instead of waiting on the rest of the ~40 files.
       - name: Tests (Pest)
         timeout-minutes: 20
         run: >
