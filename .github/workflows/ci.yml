@@ -128,22 +128,23 @@ jobs:
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
           onyx-aip:test php artisan migrate:fresh -v
 
-      # migrate:fresh succeeds fine standalone, with or without --force — so
-      # it's not the migration command itself. Pest calls it in-process via
-      # RefreshDatabase, sharing the already-booted app/PDO connection rather
-      # than a fresh CLI invocation, which is the one thing that differs
-      # between the diagnostics above and the real hang. Isolating to just
-      # the single file that runs first (Assets/, first alphabetically —
-      # matches the very first failure reported) narrows down whether this
-      # is about Pest's specific invocation mechanism at all, independent of
-      # which Feature test happens to go first.
+      # migrate:fresh succeeds fine standalone, with or without --force, and
+      # even running just one already-passing-locally Feature file through
+      # Pest hangs the same way — so it's not the migration command, not a
+      # specific test, and not RefreshDatabase's logic. `docker run` without
+      # -i leaves the container's stdin closed (not /dev/null with instant
+      # EOF) — if anything in this path attempts a read on stdin, a closed
+      # fd can block instead of erroring depending on how it's handled.
+      # -i plus redirecting the docker CLI's own stdin from /dev/null gives
+      # the container a real, immediately-EOF stdin instead.
       - name: Run one Feature test file via Pest (isolated diagnostic)
         timeout-minutes: 2
         run: >
-          docker run --rm --network host
+          docker run -i --rm --network host
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
           onyx-aip:test ./vendor/bin/pest tests/Feature/Assets/AssetCrudTest.php --ci
+          < /dev/null
 
       - name: Tests (Pest)
         timeout-minutes: 10
