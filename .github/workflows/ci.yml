@@ -45,25 +45,28 @@ jobs:
 
       # tests/ is excluded from the image via .dockerignore to keep the
       # production `runtime` image lean, so it's mounted in here instead of
-      # being baked into a layer.
+      # being baked into a layer. --entrypoint overrides docker/entrypoint.sh
+      # (ENTRYPOINT in the Dockerfile) — these are one-off tool invocations,
+      # not the app booting as a service, so its migrate/APP_KEY/cache-warm
+      # logic doesn't apply and would otherwise fail these steps outright.
       - name: Security audit
         run: >
-          docker run --rm
+          docker run --rm --entrypoint composer
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
-          onyx-aip:test composer audit --no-dev
+          onyx-aip:test audit --no-dev
 
       - name: Style check (Pint)
         run: >
-          docker run --rm
+          docker run --rm --entrypoint ./vendor/bin/pint
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
-          onyx-aip:test ./vendor/bin/pint --test
+          onyx-aip:test --test
 
       - name: Static analysis (Larastan level 5)
         run: >
-          docker run --rm
+          docker run --rm --entrypoint ./vendor/bin/phpstan
           -v ${{ github.workspace }}/tests:/var/www/html/tests:ro
           -v ${{ github.workspace }}/.env:/var/www/html/.env:ro
-          onyx-aip:test ./vendor/bin/phpstan analyse --memory-limit=1G
+          onyx-aip:test analyse --memory-limit=1G
 
       # Pest is deliberately NOT run here. RefreshDatabase's migrate:fresh
       # against a real MySQL connection hung for an identical ~12 minutes on
