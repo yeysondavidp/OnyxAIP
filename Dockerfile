@@ -73,6 +73,13 @@ COPY . .
 # ---- compiled assets from stage 1 -------------------------
 COPY --from=assets /build/public/build ./public/build
 
+# ---- snapshot public/ for nginx's shared volume -------------
+# nginx has no copy of public/ (Vite build included) at all — it's only
+# ever baked into this image. docker-compose.yml's `app` command re-syncs
+# this snapshot into the shared app_public volume on every boot, so a
+# stale/empty volume from a previous image build never serves old assets.
+RUN cp -a public /opt/public-dist
+
 # ---- storage dirs + permissions ----------------------------
 # vendor/ is included since every RUN before this point (including
 # composer install above) executes as root by default — php-fpm runs
@@ -83,7 +90,7 @@ RUN mkdir -p storage/framework/cache \
              storage/framework/views \
              storage/logs \
              bootstrap/cache \
-    && chown -R app:app storage bootstrap/cache vendor \
+    && chown -R app:app storage bootstrap/cache vendor /opt/public-dist \
     && chmod -R 755 storage bootstrap/cache
 
 # ---- php-fpm runs as app user ------------------------------
