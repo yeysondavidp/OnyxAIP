@@ -228,10 +228,19 @@ class ImportVendorStorePlayers extends Command
         return [$client, $store, $sub];
     }
 
-    /** @param array<string, int> $stats */
+    /**
+     * Matches by client_code first, not just client_name — a client for this
+     * vendor may already exist under a different display name (e.g. "Sephora"
+     * vs. this CSV's "SEPHORA AU"), and client_code is what's actually unique.
+     * Reuses the existing record as-is rather than renaming it.
+     *
+     * @param  array<string, int>  $stats
+     */
     private function findOrCreateClient(string $name, array &$stats): Client
     {
-        $existing = Client::where('client_name', $name)->first();
+        $code = self::CLIENT_CODES[$name] ?? strtoupper(substr($name, 0, 3));
+
+        $existing = Client::where('client_code', $code)->orWhere('client_name', $name)->first();
 
         if ($existing) {
             return $existing;
@@ -241,7 +250,7 @@ class ImportVendorStorePlayers extends Command
 
         return Client::create([
             'client_name' => $name,
-            'client_code' => self::CLIENT_CODES[$name] ?? strtoupper(substr($name, 0, 3)),
+            'client_code' => $code,
             'is_active'   => true,
         ]);
     }
