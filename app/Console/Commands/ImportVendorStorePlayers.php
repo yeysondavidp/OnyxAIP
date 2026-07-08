@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Enums\AssetStatus;
 use App\Enums\AssetType;
 use App\Enums\AustralianState;
+use App\Enums\Country;
+use App\Enums\NewZealandRegion;
 use App\Enums\PlayerType;
 use App\Enums\StoreType;
 use App\Models\Asset;
@@ -38,9 +40,11 @@ class ImportVendorStorePlayers extends Command
     ];
 
     /**
-     * client|store => AustralianState. Inferred from well-known shopping
-     * centre / suburb names. NZ stores are placeholdered to NSW (flagged in
-     * notes) since the system has no non-AU state — see the store's notes.
+     * client|store => AustralianState, for stores actually located in
+     * Australia. Inferred from well-known shopping centre / suburb names.
+     * Stores listed in NZ_STORES below are New Zealand locations and are
+     * deliberately absent here — findOrCreateStore() branches on NZ_STORES
+     * first and never consults this map for them (US-03.5).
      */
     private const STATE_MAP = [
         'DIOR|BOUTIQUE BONDI'             => 'NSW',
@@ -62,9 +66,6 @@ class ImportVendorStorePlayers extends Command
         'DIOR|MYER MELBOURNE'             => 'VIC',
         'DIOR|MYER PERTH'                 => 'WA',
         'DIOR|MYER PITT ST'               => 'NSW',
-        'DIOR|NZ-BOUTIQUE COMMERCIAL BAY' => 'NSW', // placeholder — actually Auckland, NZ
-        'DIOR|NZ-DJs NEWMARKET'           => 'NSW', // placeholder — actually Auckland, NZ
-        'DIOR|NZ-S&C QUEEN ST'            => 'NSW', // placeholder — actually Auckland, NZ
         'DIOR|POP-UP BURWOOD'             => 'NSW',
         'DIOR|POP-UP QVB'                 => 'NSW',
         'DIOR|SYD AIRPORT (LCP/LED)'      => 'NSW',
@@ -92,11 +93,15 @@ class ImportVendorStorePlayers extends Command
         'SEPHORA AU|Rundle Mall'          => 'SA',
         'SEPHORA AU|SEPHORA HEADQUARTERS' => 'NSW', // placeholder — HQ location unconfirmed
         'SEPHORA AU|SUNSHINE PLAZA'       => 'QLD',
-        'SEPHORA AU|SYLVIA PARK - NZ'     => 'NSW', // placeholder — actually Auckland, NZ
         'SEPHORA AU|Southland'            => 'VIC',
     ];
 
-    /** Stores whose true location is outside Australia — flagged in notes, not just placeholdered silently. */
+    /**
+     * Stores whose true location is New Zealand, not Australia. Authoritative
+     * for country/region/timezone in findOrCreateStore() (US-03.5) — every
+     * known NZ store today is in Auckland, so they all map to
+     * NewZealandRegion::Auckland; add a new case there first if that changes.
+     */
     private const NZ_STORES = [
         'DIOR|NZ-BOUTIQUE COMMERCIAL BAY' => 'Auckland, New Zealand (Commercial Bay)',
         'DIOR|NZ-DJs NEWMARKET'           => 'Auckland, New Zealand (Newmarket)',
@@ -266,20 +271,27 @@ class ImportVendorStorePlayers extends Command
             return $existing;
         }
 
-        $state = self::STATE_MAP[$key] ?? null;
-
-        if ($state === null) {
-            throw new \RuntimeException("No state mapping for store \"{$key}\" — add it to STATE_MAP before importing.");
-        }
-
         $notes = 'Imported from vendor CSV export — address, suburb and postcode need PM confirmation.';
-
-        if (isset(self::NZ_STORES[$key])) {
-            $notes .= ' Actual location: '.self::NZ_STORES[$key].' — state stored as an Australian placeholder only; the system does not yet support non-AU stores.';
-        }
 
         if (isset(self::HQ_STORES[$key])) {
             $notes .= ' Corporate HQ, not a retail location — imported for reception screen asset tracking only. Address unconfirmed.';
+        }
+
+        if (isset(self::NZ_STORES[$key])) {
+            $notes .= ' Actual location: '.self::NZ_STORES[$key].'.';
+            $country       = Country::NewZealand->value;
+            $regionCode    = NewZealandRegion::Auckland->value;
+            $storeTimezone = 'Pacific/Auckland';
+        } else {
+            $state = self::STATE_MAP[$key] ?? null;
+
+            if ($state === null) {
+                throw new \RuntimeException("No state mapping for store \"{$key}\" — add it to STATE_MAP before importing.");
+            }
+
+            $country       = Country::Australia->value;
+            $regionCode    = AustralianState::from($state)->value;
+            $storeTimezone = self::STATE_TIMEZONES[$state];
         }
 
         $storeType = match (true) {
@@ -298,17 +310,18 @@ class ImportVendorStorePlayers extends Command
             'store_type'     => $storeType,
             'address_line1'  => 'TBC',
             'suburb'         => 'TBC',
-            'state'          => AustralianState::from($state),
+            'state'          => $regionCode,
             'postcode'       => 'TBC',
-            'country'        => 'Australia',
-            'store_timezone' => self::STATE_TIMEZONES[$state],
+            'country'        => $country,
+            'store_timezone' => $storeTimezone,
             'notes'          => $notes,
             'is_active'      => true,
         ]);
         // generateCode()'s $suburb param becomes the code's middle segment (e.g.
         // "SYD" in "PAN-SYD-001") — suburb itself is a TBC placeholder here, so
-        // state produces a more useful code (e.g. "DIO-NSW-001") in the meantime.
-        $store->store_code = Store::generateCode($client, $state);
+        // the region code produces a more useful code (e.g. "DIO-NSW-001" /
+        // "DIO-AUK-001") in the meantime.
+        $store->store_code = Store::generateCode($client, $regionCode);
         $store->save();
 
         return $store;

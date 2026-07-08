@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AustralianState;
+use App\Enums\NewZealandRegion;
 use App\Services\Sla\BusinessHoursCalculator;
 use App\Services\Sla\StaticAuPublicHolidayProvider;
 use Carbon\CarbonImmutable;
@@ -55,4 +56,14 @@ it('starts from the next business instant when the clock starts outside business
     $target = calculator()->addBusinessHours($start, 1, AustralianState::Nsw, 'Australia/Sydney');
 
     expect($target->setTimezone('Australia/Sydney')->format('Y-m-d H:i'))->toBe('2026-07-02 09:00');
+});
+
+it('computes a weekends-only clock for a region without a dedicated holiday calendar (US-03.5)', function () {
+    // Fri 2026-07-03 17:00 Auckland + 3 hours: no NZ holiday calendar yet, so
+    // this only skips the weekend, same as the AU weekend-skip test above.
+    $start = CarbonImmutable::parse('2026-07-03 05:00:00', 'UTC');
+
+    $target = calculator()->addBusinessHours($start, 3, NewZealandRegion::Auckland, 'Pacific/Auckland');
+
+    expect($target->setTimezone('Pacific/Auckland')->format('l Y-m-d H:i'))->toBe('Monday 2026-07-06 10:00');
 });

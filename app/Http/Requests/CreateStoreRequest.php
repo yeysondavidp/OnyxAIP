@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\AustralianState;
+use App\Enums\Country;
 use App\Enums\StoreType;
 use App\Models\Store;
 use Illuminate\Foundation\Http\FormRequest;
@@ -17,6 +17,12 @@ class CreateStoreRequest extends FormRequest
 
     public function rules(): array
     {
+        // The state/region field is validated against whichever country was
+        // submitted (defaulting to Australia) — a PM can't pair a New
+        // Zealand region with an Australian state or vice versa (US-03.5).
+        $country     = Country::tryFrom((string) $this->input('country')) ?? Country::Australia;
+        $stateValues = array_map(fn ($region) => $region->value, $country->regions());
+
         return [
             'client_id'           => ['required', 'integer', 'exists:clients,id'],
             'store_name'          => ['required', 'string', 'max:255'],
@@ -24,9 +30,9 @@ class CreateStoreRequest extends FormRequest
             'store_type'          => ['required', Rule::enum(StoreType::class)],
             'address_line1'       => ['required', 'string', 'max:255'],
             'suburb'              => ['required', 'string', 'max:100'],
-            'state'               => ['required', Rule::enum(AustralianState::class)],
+            'country'             => ['sometimes', Rule::enum(Country::class)],
+            'state'               => ['required', Rule::in($stateValues)],
             'postcode'            => ['required', 'string', 'max:10'],
-            'country'             => ['sometimes', 'string', 'max:60'],
             'store_timezone'      => ['required', 'timezone:all'],
             'store_manager_name'  => ['nullable', 'string', 'max:255'],
             'store_manager_phone' => ['nullable', 'string', 'max:30'],
@@ -41,7 +47,8 @@ class CreateStoreRequest extends FormRequest
         return [
             'store_code.unique'       => 'Store code is already in use.',
             'store_timezone.timezone' => 'Please select a valid timezone.',
-            'state.enum'              => 'Please select a valid Australian state or territory.',
+            'state.in'                => 'Please select a valid state or region for the selected country.',
+            'country.enum'            => 'Please select a valid country.',
             'store_type.enum'         => 'Please select a valid store type.',
         ];
     }

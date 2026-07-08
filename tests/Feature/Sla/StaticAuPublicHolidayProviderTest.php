@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AustralianState;
+use App\Enums\NewZealandRegion;
 use App\Services\Sla\StaticAuPublicHolidayProvider;
 use Carbon\CarbonImmutable;
 
@@ -51,6 +52,13 @@ it('applies Easter Saturday/Sunday only in the states that observe it', function
 
     expect(holidays()->isHoliday($easterSunday, AustralianState::Nsw))->toBeTrue();
     expect(holidays()->isHoliday($easterSunday, AustralianState::Sa))->toBeFalse();
+});
+
+it('falls back to no-holidays for a region without a dedicated calendar yet (US-03.5)', function () {
+    // NZ has its own real holidays (Waitangi Day, Matariki, etc.) that this
+    // AU-only provider doesn't know about — it must not crash, and must not
+    // silently claim an AU holiday date applies, pending the US-12.4 NZ provider.
+    expect(holidays()->isHoliday(CarbonImmutable::parse('2026-01-26'), NewZealandRegion::Auckland))->toBeFalse();
 });
 
 it('computes each state Labour Day / King\'s Birthday equivalent as a Monday', function () {

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AustralianState;
+use App\Enums\Country;
 use App\Enums\JobStatus;
+use App\Enums\NewZealandRegion;
 use App\Enums\StoreType;
 use App\Http\Requests\CreateStoreRequest;
 use App\Http\Requests\UpdateStoreRequest;
@@ -28,18 +30,16 @@ class StoreController extends Controller
     {
         $this->authorize('create', Store::class);
 
-        return view('stores.create', [
+        return view('stores.create', self::countryFormData() + [
             'clients'    => Client::where('is_active', true)->orderBy('client_name')->get(['id', 'client_name']),
             'storeTypes' => StoreType::cases(),
-            'states'     => AustralianState::cases(),
-            'timezones'  => self::australianTimezones(),
         ]);
     }
 
     public function store(CreateStoreRequest $request): RedirectResponse
     {
         $data            = $request->validated();
-        $data['country'] = $data['country'] ?? 'Australia';
+        $data['country'] = $data['country'] ?? Country::Australia->value;
 
         if (empty($data['store_code'])) {
             $data['store_code'] = Store::generateCode(Client::findOrFail($data['client_id']), $data['suburb']);
@@ -98,19 +98,16 @@ class StoreController extends Controller
     {
         $this->authorize('update', $store);
 
-        return view('stores.edit', [
+        return view('stores.edit', self::countryFormData() + [
             'store'      => $store,
             'clients'    => Client::where('is_active', true)->orderBy('client_name')->get(['id', 'client_name']),
             'storeTypes' => StoreType::cases(),
-            'states'     => AustralianState::cases(),
-            'timezones'  => self::australianTimezones(),
         ]);
     }
 
     public function update(UpdateStoreRequest $request, Store $store): RedirectResponse
     {
-        $data            = $request->validated();
-        $data['country'] = $data['country'] ?? 'Australia';
+        $data = $request->validated();
 
         $store->update($data);
 
@@ -130,18 +127,21 @@ class StoreController extends Controller
             ->with('success', "Store '{$store->store_name}' has been deactivated.");
     }
 
-    /** @return array<string, string> */
-    private static function australianTimezones(): array
+    /**
+     * Shared country/state/timezone options for the create and edit forms'
+     * Country → State/Region → Timezone cascade (US-03.5). One source so the
+     * two views never drift apart.
+     *
+     * @return array<string, mixed>
+     */
+    private static function countryFormData(): array
     {
         return [
-            'Australia/Sydney'    => 'Sydney / Canberra (AEST/AEDT)',
-            'Australia/Melbourne' => 'Melbourne (AEST/AEDT)',
-            'Australia/Brisbane'  => 'Brisbane (AEST — no daylight saving)',
-            'Australia/Perth'     => 'Perth (AWST)',
-            'Australia/Adelaide'  => 'Adelaide (ACST/ACDT)',
-            'Australia/Darwin'    => 'Darwin (ACST — no daylight saving)',
-            'Australia/Hobart'    => 'Hobart (AEST/AEDT)',
-            'Australia/Lord_Howe' => 'Lord Howe Island (LHST/LHDT)',
+            'countries'           => Country::cases(),
+            'australianStates'    => AustralianState::cases(),
+            'newZealandRegions'   => NewZealandRegion::cases(),
+            'australianTimezones' => Country::Australia->timezones(),
+            'newZealandTimezones' => Country::NewZealand->timezones(),
         ];
     }
 }

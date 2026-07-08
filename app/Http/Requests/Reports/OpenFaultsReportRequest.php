@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Reports;
 
-use App\Enums\AustralianState;
+use App\Enums\Country;
 use App\Models\ReportExport;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,9 +17,13 @@ class OpenFaultsReportRequest extends FormRequest
 
     public function rules(): array
     {
+        // State/region values span every country (US-03.5) — this filter has
+        // no accompanying Country field, so it accepts any known value.
+        $stateValues = collect(Country::cases())->flatMap->regions()->map->value->all();
+
         return [
             'client_id' => ['required', 'integer', Rule::exists('clients', 'id')],
-            'state'     => ['nullable', Rule::enum(AustralianState::class)],
+            'state'     => ['nullable', Rule::in($stateValues)],
         ];
     }
 

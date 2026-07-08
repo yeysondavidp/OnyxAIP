@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum AustralianState: string
+enum AustralianState: string implements Region
 {
     case Nsw = 'NSW';
     case Vic = 'VIC';

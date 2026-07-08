@@ -23,8 +23,17 @@
         </div>
 
         <div style="min-width: 140px;">
-            <x-onyx.select name="state_filter" label="State" wire:model.live="stateFilter">
-                <option value="">All states</option>
+            <x-onyx.select name="country_filter" label="Country" wire:model.live="countryFilter">
+                <option value="">All countries</option>
+                @foreach ($countries as $country)
+                    <option value="{{ $country->value }}">{{ $country->label() }}</option>
+                @endforeach
+            </x-onyx.select>
+        </div>
+
+        <div style="min-width: 140px;">
+            <x-onyx.select name="state_filter" label="State / region" wire:model.live="stateFilter">
+                <option value="">All states/regions</option>
                 @foreach ($states as $state)
                     <option value="{{ $state->value }}">{{ $state->value }}</option>
                 @endforeach
@@ -47,12 +56,17 @@
     </div>
 
     {{-- Active filter indicators --}}
-    @if ($clientFilter !== '' || $stateFilter !== '' || $typeFilter !== '')
+    @if ($clientFilter !== '' || $countryFilter !== '' || $stateFilter !== '' || $typeFilter !== '')
         <div style="display: flex; gap: var(--space-2); margin-bottom: var(--space-4); flex-wrap: wrap; align-items: center;">
             <span style="font-size: var(--fs-13); color: var(--text-secondary);">Filtering by:</span>
             @if ($clientFilter !== '')
                 <x-onyx.tag wire:click="$set('clientFilter', '')" style="cursor: pointer;">
                     Client ×
+                </x-onyx.tag>
+            @endif
+            @if ($countryFilter !== '')
+                <x-onyx.tag wire:click="$set('countryFilter', '')" style="cursor: pointer;">
+                    {{ $countryFilter }} ×
                 </x-onyx.tag>
             @endif
             @if ($stateFilter !== '')
@@ -75,7 +89,7 @@
     </div>
 
     {{-- Empty state --}}
-    @if ($stores->isEmpty() && $search === '' && $clientFilter === '' && $stateFilter === '' && $typeFilter === '' && !$showInactive)
+    @if ($stores->isEmpty() && $search === '' && $clientFilter === '' && $countryFilter === '' && $stateFilter === '' && $typeFilter === '' && !$showInactive)
         <x-onyx.empty
             icon="map-pin"
             heading="No stores added yet"
@@ -92,7 +106,7 @@
             heading="No stores match your filters"
             body="Try adjusting or clearing your search and filters."
         >
-            <x-onyx.button wire:click="$set('search', ''); $set('clientFilter', ''); $set('stateFilter', ''); $set('typeFilter', '')" variant="outline" size="sm">
+            <x-onyx.button wire:click="$set('search', ''); $set('clientFilter', ''); $set('countryFilter', ''); $set('stateFilter', ''); $set('typeFilter', '')" variant="outline" size="sm">
                 Clear filters
             </x-onyx.button>
         </x-onyx.empty>

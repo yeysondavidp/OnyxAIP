@@ -3,6 +3,8 @@
 namespace Database\Factories;
 
 use App\Enums\AustralianState;
+use App\Enums\Country;
+use App\Enums\NewZealandRegion;
 use App\Enums\StoreType;
 use App\Models\Client;
 use App\Models\Store;
@@ -39,5 +41,17 @@ class StoreFactory extends Factory
     public function inactive(): static
     {
         return $this->state(['is_active' => false]);
+    }
+
+    /** A store in Auckland, NZ — the only region the platform models today (US-03.5). */
+    public function newZealand(): static
+    {
+        return $this->state(fn () => [
+            'suburb'         => 'Auckland',
+            'state'          => NewZealandRegion::Auckland->value,
+            'postcode'       => (string) fake()->numberBetween(1000, 2999),
+            'country'        => Country::NewZealand->value,
+            'store_timezone' => 'Pacific/Auckland',
+        ]);
     }
 }

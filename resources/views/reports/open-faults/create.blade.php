@@ -25,10 +25,14 @@
                         @endforeach
                     </x-onyx.select>
 
-                    <x-onyx.select name="state" label="State (optional)" :error="$errors->first('state')">
-                        <option value="">— All states —</option>
-                        @foreach (\App\Enums\AustralianState::cases() as $state)
-                            <option value="{{ $state->value }}" @selected(old('state') === $state->value)>{{ $state->label() }}</option>
+                    <x-onyx.select name="state" label="State / region (optional)" :error="$errors->first('state')">
+                        <option value="">— All states/regions —</option>
+                        @foreach (\App\Enums\Country::cases() as $country)
+                            <optgroup label="{{ $country->label() }}">
+                                @foreach ($country->regions() as $state)
+                                    <option value="{{ $state->value }}" @selected(old('state') === $state->value)>{{ $state->label() }}</option>
+                                @endforeach
+                            </optgroup>
                         @endforeach
                     </x-onyx.select>
 

@@ -275,3 +275,103 @@ sections render gracefully when their upstream data is absent; StorePolicy cross
 covered by US-03.3 test (no duplicate needed); Pint + Larastan clean; one happy-path integration
 test covering the populated dashboard; one test verifying the "no faults / no jobs / no SLA"
 empty-state rendering.
+
+---
+
+## US-03.5 — Store country/region support beyond Australia (NZ)
+
+**As** Yeis (PM)
+**I want** to record a store's real country, choose from that country's own list of
+states/regions, and set an accurate IANA timezone for it
+**So that** stores physically located outside Australia — starting with the 4 Auckland, NZ
+boutiques already in the platform (Sylvia Park, Commercial Bay, Newmarket, Queen St) — are
+recorded with their true location instead of a placeholder Australian state, and every downstream
+calculation (SLA clock, reports, dashboards) uses the correct jurisdiction.
+
+**Estimate:** 8 · **Priority:** P0 · **Depends on:** US-03.1 · **Impacts:** EPIC-12 (US-12.2
+business-hours clock — this story makes the interface country-aware and crash-safe for NZ, but
+the actual NZ public-holiday calendar is a separate follow-up story tracked against EPIC-12) ·
+**Status:** 📋 Ready
+
+### Background
+
+On 2026-07-08 a one-off vendor CSV import (`ImportVendorStorePlayers`, SRA §16 Q3) created 4 real
+stores for Dior and Sephora that are actually in Auckland, NZ, but the system had no non-AU state,
+so they were saved with `state = NSW`, `country = "Australia"`, and
+`store_timezone = "Australia/Sydney"`, flagged only in a free-text note. This is not just a
+data-quality gap: `SlaClockService` passes `Store::$state` straight into
+`BusinessHoursCalculator` / `PublicHolidayProvider`, so any fault job raised against these 4
+stores today silently computes its SLA breach clock against the **Sydney public-holiday
+calendar**, not Auckland's.
+
+### Acceptance criteria
+
+- **Given** the store create/edit form, **when** a PM opens it, **then** `Country` is a visible,
+  user-editable field (not a hardcoded hidden input) offering at minimum Australia and New
+  Zealand, defaulting to Australia for new stores.
+- **Given** a PM selects a `Country`, **when** the form re-renders (client-side, no round-trip),
+  **then** the `State`/`Region` dropdown repopulates with that country's own list — the 8 existing
+  AU states/territories for Australia, or New Zealand's regions for New Zealand — and any prior
+  selection that no longer applies is cleared.
+- **Given** a PM selects `Country = New Zealand`, **when** the `StoreTimezone` dropdown renders,
+  **then** it offers NZ IANA zones (at minimum `Pacific/Auckland`) instead of the Australian zone
+  list.
+- **Given** a store's `Country` and `State`/`Region`, **when** submitted, **then** server-side
+  validation rejects any state/region value that does not belong to the selected country's own
+  list — a PM cannot submit `Country = New Zealand` with `State = NSW`, or vice versa, even by
+  tampering with the request.
+- **Given** the store list and the Asset Register / Open Faults report filters, **when** a PM
+  filters by state/region, **then** New Zealand stores and regions are selectable and returned
+  correctly, clearly distinguished from Australian ones (e.g. a `Country` filter alongside the
+  existing State filter, or a country-qualified label).
+- **Given** a store whose `Country` is not Australia, **when** its SLA clock computes business
+  hours (EPIC-12), **then** the system does not crash and does not silently apply the wrong
+  country's holiday calendar — it either applies a documented placeholder rule (weekends-only, no
+  public holidays) or clearly surfaces "SLA holiday calendar not yet available for this country"
+  until the dedicated NZ holiday-provider story ships; the fallback is logged, not swallowed.
+- **Given** the 4 existing Auckland stores imported with the AU placeholder, **when** this story
+  ships, **then** a one-off backfill command (following the `ImportVendorStorePlayers` idempotent
+  pattern) corrects their `country`, `state`/region (Auckland), and `store_timezone`
+  (`Pacific/Auckland`), and removes the "state stored as an Australian placeholder only" note.
+- **Given** an existing store whose `country` is already `Australia` (the overwhelming majority),
+  **when** this story ships, **then** its behaviour is completely unchanged — no re-validation
+  failure, no forced re-save, no visual change to its form.
+
+### Engineering Bar checklist
+
+- **Secure:** state/region validation stays server-side and authoritative regardless of what the
+  client-side Alpine cascade shows — a tampered request submitting a mismatched country/state pair
+  is rejected by the Form Request, not just hidden in the UI; `$fillable` unchanged (no new
+  mass-assignment surface); the backfill command runs once, is idempotent, and only touches the
+  known affected store codes/notes pattern — no blanket `UPDATE`.
+- **Clean:** introduce one `Country` enum reused everywhere `'Australia'` is currently hardcoded
+  (`StoreController`, `StoreFactory`, both Form Requests, both Blade views); keep the existing
+  `AustralianState` enum as-is and add a parallel region enum for New Zealand rather than merging
+  incompatible value sets into one enum; `state` remains a plain string column — no schema
+  migration needed since `country` already exists (`alter_stores_table_sprint2`); reuse the
+  existing Store CRUD/Form Request/policy from US-03.1, extend rather than duplicate.
+- **UX:** country → state/region → timezone is an obviously-cascading control (Alpine.js, no
+  round-trip, consistent with the ADR-001 mobile-first pattern already used elsewhere) so a
+  non-technical PM understands why the second dropdown changed; inline `@error` messaging for a
+  mismatched country/state pair names both fields, not a generic error; Australian English
+  throughout except NZ proper nouns.
+- **No guessing:** confirm with the user which New Zealand regions to hard-code (all 16 official
+  regions, or just the ones seen in real data today, i.e. Auckland) before writing the enum; read
+  `BusinessHoursCalculator` / `PublicHolidayProvider` / `SlaClockService` fully before touching
+  the interface, since it sits on a live SLA path, not just the store form; verify the backfill
+  target rows directly in production data (e.g. `Store::where('notes', 'like',
+  '%Australian placeholder only%')`) before writing the command — do not assume the 4 store codes
+  from the import command's source constant still match current data.
+
+### Definition of Done
+
+`Country` enum introduced and used everywhere the literal `'Australia'` was hardcoded; store
+create/edit forms expose an editable, cascading Country → State/Region → Timezone flow with no
+server round-trip; Form Request validates state/region against the selected country's own enum;
+store list and report filters support New Zealand stores; SLA business-hours computation degrades
+safely (no crash, no silent wrong-country calendar) for non-AU stores pending the EPIC-12 NZ
+holiday-provider follow-up; one-off idempotent backfill command corrects the 4 known Auckland
+stores' `country` / `state` / `store_timezone` and clears their placeholder note; existing
+Australian stores unaffected (regression-tested); Pint + Larastan clean; happy-path integration
+test for creating/editing a New Zealand store; regression test confirming an Australian store's
+flow is unchanged; test confirming SLA computation does not throw for a New Zealand store.

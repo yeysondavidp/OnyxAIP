@@ -43,7 +43,7 @@
                         <span style="color: var(--text-primary);">
                             {{ $store->address_line1 }}<br>
                             {{ $store->suburb }}, {{ $store->state?->value }} {{ $store->postcode }}<br>
-                            {{ $store->country }}
+                            {{ $store->country?->label() }}
                         </span>
                     </div>
                     <div style="display: flex; gap: var(--space-3);">

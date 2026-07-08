@@ -3,14 +3,16 @@
 namespace App\Services\Sla;
 
 use App\Contracts\PublicHolidayProvider;
-use App\Enums\AustralianState;
+use App\Enums\Region;
 use Carbon\CarbonImmutable;
 
 /**
  * Adds a number of business hours to a UTC instant, evaluated in the store's
- * own IANA timezone and skipping weekends + AU public holidays (SRA §10.2).
- * Reused by US-12.2 (SLA clock) and US-12.3 (breach-risk) — one calculator,
- * no duplicated holiday/business-hours logic.
+ * own IANA timezone and skipping weekends + public holidays for its region
+ * (SRA §10.2). Reused by US-12.2 (SLA clock) and US-12.3 (breach-risk) — one
+ * calculator, no duplicated holiday/business-hours logic. Typed against the
+ * country-agnostic Region interface (US-03.5); which holidays apply is
+ * entirely the bound PublicHolidayProvider's concern.
  */
 class BusinessHoursCalculator
 {
@@ -22,7 +24,7 @@ class BusinessHoursCalculator
     public function addBusinessHours(
         CarbonImmutable $fromUtc,
         int $hours,
-        AustralianState $state,
+        Region $state,
         string $timezone,
     ): CarbonImmutable {
         $startHour = (int) config('sla.business_hours_start', 8);
@@ -72,7 +74,7 @@ class BusinessHoursCalculator
         CarbonImmutable $local,
         int $startHour,
         int $endHour,
-        AustralianState $state,
+        Region $state,
     ): CarbonImmutable {
         $cursor  = $local;
         $scanned = 0;
@@ -100,7 +102,7 @@ class BusinessHoursCalculator
         }
     }
 
-    private function isBusinessDay(CarbonImmutable $date, AustralianState $state): bool
+    private function isBusinessDay(CarbonImmutable $date, Region $state): bool
     {
         return ! $date->isWeekend() && ! $this->holidays->isHoliday($date, $state);
     }

@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Reports;
 
 use App\Enums\AssetType;
-use App\Enums\AustralianState;
+use App\Enums\Country;
 use App\Models\ReportExport;
 use App\Models\Store;
 use Illuminate\Foundation\Http\FormRequest;
@@ -19,10 +19,14 @@ class AssetRegisterReportRequest extends FormRequest
 
     public function rules(): array
     {
+        // State/region values span every country (US-03.5) — this filter has
+        // no accompanying Country field, so it accepts any known value.
+        $stateValues = collect(Country::cases())->flatMap->regions()->map->value->all();
+
         return [
             'client_id'   => ['required', 'integer', Rule::exists('clients', 'id')],
             'store_id'    => ['nullable', 'integer', Rule::exists('stores', 'id')],
-            'state'       => ['nullable', Rule::enum(AustralianState::class)],
+            'state'       => ['nullable', Rule::in($stateValues)],
             'asset_type'  => ['nullable', Rule::enum(AssetType::class)],
             'report_kind' => ['required', Rule::in(['register_csv', 'register_pdf', 'status_summary_csv'])],
         ];
