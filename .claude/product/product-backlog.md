@@ -69,6 +69,7 @@ The security spine. See `stories/epic-01-identity-security.md`.
 | US-03.2 | Store list filterable by client/state/type |
 | US-03.3 | Store dashboard: metadata + asset inventory table (§8) |
 | US-03.4 | Store dashboard: open faults + last-service-per-asset + SLA status |
+| US-03.5 | Store country/region support beyond Australia (NZ) |
 
 ## EPIC-04 — Asset Registry · P0 · 📋 detailed
 
@@ -155,6 +156,7 @@ Alpine-first per ADR-001. Each screen is a story.
 | US-12.1 | CRUD SLA profiles (§10.1) |
 | US-12.2 | SLA clock start on fault job + business-hours/holiday calendar (§10.2) |
 | US-12.3 | Breach-risk computation + flags on job/store/client views |
+| US-12.4 | NZ public-holiday calendar for `PublicHolidayProvider` (Waitangi Day, Matariki, Auckland Anniversary, NZ Labour Day, Anzac Day mondayisation) — 🧊 not yet detailed, follow-up to US-03.5 |
 
 ## EPIC-13 — Notifications · P1 · 📋 detailed
 

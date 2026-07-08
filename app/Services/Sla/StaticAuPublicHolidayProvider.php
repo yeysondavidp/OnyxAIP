@@ -4,6 +4,7 @@ namespace App\Services\Sla;
 
 use App\Contracts\PublicHolidayProvider;
 use App\Enums\AustralianState;
+use App\Enums\Region;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
@@ -20,11 +21,20 @@ use Illuminate\Support\Facades\Cache;
  * calendar date (with standard weekend "Mondayisation") or a stable
  * nth-weekday-of-month rule. Sits behind PublicHolidayProvider so a
  * licensed data source can replace this with no calculator changes.
+ *
+ * Non-AU regions (e.g. NewZealandRegion) have no calendar here yet — see
+ * US-12.4 for the dedicated NZ public-holiday provider. Until that ships,
+ * isHoliday() returns false for them, i.e. a documented weekends-only
+ * fallback (SlaClockService logs when this fallback is in effect).
  */
 class StaticAuPublicHolidayProvider implements PublicHolidayProvider
 {
-    public function isHoliday(CarbonInterface $date, AustralianState $state): bool
+    public function isHoliday(CarbonInterface $date, Region $state): bool
     {
+        if (! $state instanceof AustralianState) {
+            return false;
+        }
+
         $dates = $this->holidaysForYear((int) $date->year, $state);
 
         return in_array($date->format('Y-m-d'), $dates, strict: true);

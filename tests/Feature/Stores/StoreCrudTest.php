@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\AustralianState;
+use App\Enums\Country;
+use App\Enums\NewZealandRegion;
 use App\Enums\StoreType;
 use App\Models\Client;
 use App\Models\ServiceJob;
@@ -50,6 +52,16 @@ it('technician cannot view the store list', function () {
 
 // ── Create / Store (US-03.1) ──────────────────────────────────────────────────
 
+it('pm can view the add store form with the country cascade', function () {
+    $pm = User::factory()->pm()->create();
+
+    $this->actingAs($pm)
+        ->get(route('stores.create'))
+        ->assertOk()
+        ->assertSee('Country')
+        ->assertSee('New Zealand');
+});
+
 it('pm can create a store', function () {
     $pm     = User::factory()->pm()->create();
     $client = Client::factory()->create();
@@ -83,6 +95,80 @@ it('state must be a valid Australian state', function () {
     $this->actingAs($pm)
         ->post(route('stores.store'), validStorePayload($client, ['state' => 'INVALID']))
         ->assertSessionHasErrors('state');
+});
+
+// ── Country/region support (US-03.5) ─────────────────────────────────────────
+
+it('pm can create a store in new zealand', function () {
+    $pm     = User::factory()->pm()->create();
+    $client = Client::factory()->create();
+
+    $payload = validStorePayload($client, [
+        'store_code'     => 'DIO-AUK-001',
+        'suburb'         => 'Auckland',
+        'state'          => NewZealandRegion::Auckland->value,
+        'postcode'       => '1010',
+        'country'        => Country::NewZealand->value,
+        'store_timezone' => 'Pacific/Auckland',
+    ]);
+
+    $this->actingAs($pm)
+        ->post(route('stores.store'), $payload)
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('stores', [
+        'store_code'     => 'DIO-AUK-001',
+        'country'        => 'New Zealand',
+        'state'          => 'AUK',
+        'store_timezone' => 'Pacific/Auckland',
+    ]);
+});
+
+it('rejects a new zealand country paired with an australian state', function () {
+    $pm     = User::factory()->pm()->create();
+    $client = Client::factory()->create();
+
+    $payload = validStorePayload($client, ['country' => Country::NewZealand->value]);
+
+    $this->actingAs($pm)
+        ->post(route('stores.store'), $payload)
+        ->assertSessionHasErrors('state');
+});
+
+it('rejects an australian country paired with a new zealand region', function () {
+    $pm     = User::factory()->pm()->create();
+    $client = Client::factory()->create();
+
+    $payload = validStorePayload($client, [
+        'country' => Country::Australia->value,
+        'state'   => NewZealandRegion::Auckland->value,
+    ]);
+
+    $this->actingAs($pm)
+        ->post(route('stores.store'), $payload)
+        ->assertSessionHasErrors('state');
+});
+
+it('updating an australian store without a country field leaves its country unchanged', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create(['country' => Country::Australia->value]);
+
+    $payload = [
+        'store_name'     => $store->store_name,
+        'store_code'     => $store->store_code,
+        'store_type'     => $store->store_type->value,
+        'address_line1'  => $store->address_line1,
+        'suburb'         => $store->suburb,
+        'state'          => $store->state->value,
+        'postcode'       => $store->postcode,
+        'store_timezone' => $store->store_timezone,
+    ];
+
+    $this->actingAs($pm)
+        ->patch(route('stores.update', $store), $payload)
+        ->assertRedirect(route('stores.show', $store));
+
+    $this->assertDatabaseHas('stores', ['id' => $store->id, 'country' => 'Australia']);
 });
 
 it('store_timezone must be a valid timezone', function () {
@@ -166,6 +252,17 @@ it('cross-tenant store dashboard is inaccessible', function () {
 });
 
 // ── Edit / Update (US-03.1) ───────────────────────────────────────────────────
+
+it('pm can view the edit store form with the country cascade', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create();
+
+    $this->actingAs($pm)
+        ->get(route('stores.edit', $store))
+        ->assertOk()
+        ->assertSee('Country')
+        ->assertSee('New Zealand');
+});
 
 it('pm can update a store', function () {
     $pm    = User::factory()->pm()->create();

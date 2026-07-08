@@ -2,12 +2,14 @@
 
 namespace App\Services\Sla;
 
+use App\Enums\Country;
 use App\Enums\PlatformSettingKey;
 use App\Enums\SlaStatus;
 use App\Models\Client;
 use App\Models\Store;
 use App\Services\Settings\PlatformSettings;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Resolves the SLA clock columns for a new fault job (US-12.2). One entry
@@ -43,6 +45,14 @@ class SlaClockService
                 'sla_resolution_target_at' => null,
                 'sla_at_risk_at'           => null,
             ];
+        }
+
+        if ($store->country !== Country::Australia) {
+            // No dedicated public-holiday calendar for this country yet (US-12.4) —
+            // the bound PublicHolidayProvider falls back to weekends-only, which is
+            // documented, not silent (US-03.5). Logged here, once per clock start,
+            // rather than per business day scanned inside the calculator.
+            Log::info("SLA business-hours clock for store #{$store->id} ({$store->store_code}) in {$store->country->value} is using a weekends-only placeholder calendar — no dedicated public-holiday provider yet.");
         }
 
         $startedAt = CarbonImmutable::now();

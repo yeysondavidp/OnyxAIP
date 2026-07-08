@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
-use App\Enums\AustralianState;
+use App\Casts\RegionCast;
+use App\Enums\Country;
+use App\Enums\Region;
 use App\Enums\StoreType;
 use App\Traits\Auditable;
 use App\Traits\ClientScoped;
@@ -12,7 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property AustralianState $state
+ * @property Region $state
+ * @property Country $country
  * @property StoreType $store_type
  */
 class Store extends BaseModel
@@ -42,7 +45,8 @@ class Store extends BaseModel
     {
         return [
             'store_type' => StoreType::class,
-            'state'      => AustralianState::class,
+            'country'    => Country::class,
+            'state'      => RegionCast::class,
             'is_active'  => 'boolean',
         ];
     }

@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Stores;
 
-use App\Enums\AustralianState;
+use App\Enums\Country;
 use App\Enums\StoreType;
 use App\Models\Client;
 use App\Models\Store;
@@ -22,6 +22,9 @@ class StoreList extends Component
     #[Url(as: 'client')]
     public string $clientFilter = '';
 
+    #[Url(as: 'country')]
+    public string $countryFilter = '';
+
     #[Url(as: 'state')]
     public string $stateFilter = '';
 
@@ -38,6 +41,13 @@ class StoreList extends Component
 
     public function updatingClientFilter(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatingCountryFilter(): void
+    {
+        // A stale state/region from the previous country no longer applies.
+        $this->stateFilter = '';
         $this->resetPage();
     }
 
@@ -69,6 +79,7 @@ class StoreList extends Component
                 });
             })
             ->when($this->clientFilter !== '', fn ($q) => $q->where('client_id', (int) $this->clientFilter))
+            ->when($this->countryFilter !== '', fn ($q) => $q->where('country', $this->countryFilter))
             ->when($this->stateFilter !== '', fn ($q) => $q->where('state', $this->stateFilter))
             ->when($this->typeFilter !== '', fn ($q) => $q->where('store_type', $this->typeFilter))
             ->orderBy('store_name')
@@ -77,11 +88,16 @@ class StoreList extends Component
 
     public function render(): View
     {
+        // Narrow the state/region options to the selected country once one is
+        // chosen; otherwise show every country's options (US-03.5).
+        $country = Country::tryFrom($this->countryFilter);
+
         return view('livewire.stores.store-list', [
-            'stores'  => $this->stores(),
-            'clients' => Client::orderBy('client_name')->get(['id', 'client_name']),
-            'states'  => AustralianState::cases(),
-            'types'   => StoreType::cases(),
+            'stores'    => $this->stores(),
+            'clients'   => Client::orderBy('client_name')->get(['id', 'client_name']),
+            'countries' => Country::cases(),
+            'states'    => $country?->regions() ?? collect(Country::cases())->flatMap->regions()->all(),
+            'types'     => StoreType::cases(),
         ]);
     }
 }

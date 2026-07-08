@@ -95,25 +95,53 @@
                         />
                     </div>
 
-                    <x-onyx.select name="state" label="State / territory" :error="$errors->first('state')" required>
-                        <option value="">— Select state —</option>
-                        @foreach ($states as $state)
-                            <option value="{{ $state->value }}" @selected(old('state') === $state->value)>
-                                {{ $state->value }} — {{ $state->label() }}
-                            </option>
-                        @endforeach
-                    </x-onyx.select>
+                    <div x-data="{ country: '{{ old('country', 'Australia') }}' }" style="display: flex; flex-direction: column; gap: var(--space-5);">
 
-                    <input type="hidden" name="country" value="Australia">
+                        <x-onyx.select name="country" label="Country" x-model="country"
+                                       @change="$refs.stateSelect.value = ''; $refs.tzSelect.value = ''"
+                                       :error="$errors->first('country')" required>
+                            @foreach ($countries as $c)
+                                <option value="{{ $c->value }}" @selected(old('country', 'Australia') === $c->value)>{{ $c->label() }}</option>
+                            @endforeach
+                        </x-onyx.select>
 
-                    <x-onyx.select name="store_timezone" label="Timezone" :error="$errors->first('store_timezone')" required>
-                        <option value="">— Select timezone —</option>
-                        @foreach ($timezones as $tz => $label)
-                            <option value="{{ $tz }}" @selected(old('store_timezone') === $tz)>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </x-onyx.select>
+                        <x-onyx.select x-ref="stateSelect" name="state" label="State / region" :error="$errors->first('state')" required>
+                            <option value="">— Select state / region —</option>
+                            <optgroup label="Australia" x-show="country === 'Australia'">
+                                @foreach ($australianStates as $state)
+                                    <option value="{{ $state->value }}" @selected(old('state') === $state->value)>
+                                        {{ $state->value }} — {{ $state->label() }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="New Zealand" x-show="country === 'New Zealand'">
+                                @foreach ($newZealandRegions as $region)
+                                    <option value="{{ $region->value }}" @selected(old('state') === $region->value)>
+                                        {{ $region->label() }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        </x-onyx.select>
+
+                        <x-onyx.select x-ref="tzSelect" name="store_timezone" label="Timezone" :error="$errors->first('store_timezone')" required>
+                            <option value="">— Select timezone —</option>
+                            <optgroup label="Australia" x-show="country === 'Australia'">
+                                @foreach ($australianTimezones as $tz => $label)
+                                    <option value="{{ $tz }}" @selected(old('store_timezone') === $tz)>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="New Zealand" x-show="country === 'New Zealand'">
+                                @foreach ($newZealandTimezones as $tz => $label)
+                                    <option value="{{ $tz }}" @selected(old('store_timezone') === $tz)>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        </x-onyx.select>
+
+                    </div>
 
                     <x-onyx.divider />
 
