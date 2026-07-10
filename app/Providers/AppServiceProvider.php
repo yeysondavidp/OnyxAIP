@@ -8,6 +8,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +26,15 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->isLocal() || $this->app->runningUnitTests()) {
             Model::preventLazyLoading();
             Model::preventSilentlyDiscardingAttributes();
+        }
+
+        // The Cloudflare Tunnel terminates TLS and forwards to the app over
+        // plain HTTP internally, with no proxy headers we can trust blindly —
+        // without this, url()/route() (and Livewire's embedded update
+        // endpoint) resolve to http://, which the browser blocks as mixed
+        // content once the page itself loaded over https.
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
         }
 
         $this->configureRateLimiters();
