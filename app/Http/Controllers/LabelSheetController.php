@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Asset;
 use App\Services\LabelSheetService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -19,7 +20,7 @@ class LabelSheetController extends Controller
     {
         $this->authorize('view', $asset);
 
-        $filename = $this->service->generate(collect([$asset]), auth()->user());
+        $filename = $this->service->generate(new Collection([$asset]), auth()->user());
 
         return $this->pdfDownload($filename, 'label-'.$asset->asset_code.'.pdf');
     }
