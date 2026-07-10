@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Asset;
+use chillerlan\QRCode\Output\QRGdImagePNG;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /**
  * Generates and stores QR code images for assets (US-07.1).
@@ -22,7 +24,9 @@ class QrCodeService
 
     private const DIRECTORY = 'qr-codes';
 
-    private const SIZE = 200;
+    private const SCALE = 6;
+
+    private const QUIET_ZONE_SIZE = 1;
 
     /**
      * Generate a QR code PNG for the asset and store it.
@@ -34,10 +38,15 @@ class QrCodeService
         $url  = route('assets.qr.lookup', ['assetCode' => $asset->asset_code]);
         $path = self::DIRECTORY.'/'.$asset->id.'.png';
 
-        $png = QrCode::format('png')
-            ->size(self::SIZE)
-            ->margin(1)
-            ->generate($url);
+        // GD-based backend (no imagick dependency, matching the runtime image — Dockerfile).
+        $options = new QROptions([
+            'outputInterface' => QRGdImagePNG::class,
+            'outputBase64'    => false,
+            'scale'           => self::SCALE,
+            'quietzoneSize'   => self::QUIET_ZONE_SIZE,
+        ]);
+
+        $png = (new QRCode($options))->render($url);
 
         Storage::disk(self::DISK)->put($path, $png);
 
