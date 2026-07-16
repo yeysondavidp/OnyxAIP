@@ -21,6 +21,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // role:pm → EnsurePmRole (used on PM portal route group)
         $middleware->alias(['role' => EnsurePmRole::class]);
+
+        // The Cloudflare Tunnel terminates TLS and forwards to nginx over plain
+        // HTTP; nginx is only reachable on 127.0.0.1 (docker-compose.yml), so the
+        // tunnel is the sole path in. Without trusting its X-Forwarded-* headers,
+        // Request::isSecure() is always false here, which breaks every signed URL:
+        // temporarySignedRoute() embeds the forced https scheme (URL::forceScheme),
+        // but hasValidSignature() rebuilds the comparison URL from the raw request
+        // (scheme http) — a guaranteed mismatch on every technician/report link.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
