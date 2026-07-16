@@ -53,6 +53,9 @@ RUN apk add --no-cache \
 # ---- opcache config ----------------------------------------
 COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
+# ---- upload limits -------------------------------------------
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # ---- composer ----------------------------------------------
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
