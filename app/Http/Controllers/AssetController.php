@@ -11,10 +11,12 @@ use App\Enums\PlayerType;
 use App\Enums\TotemSuppliedBy;
 use App\Http\Requests\CreateAssetRequest;
 use App\Http\Requests\UpdateAssetRequest;
+use App\Jobs\WriteAuditLog;
 use App\Models\Asset;
 use App\Models\Client;
 use App\Models\ServiceHistory;
 use App\Services\Notifications\NotificationDispatcher;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -80,6 +82,48 @@ class AssetController extends Controller
         abort_unless($allowed->contains($path), 403);
 
         return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * Reveal a router credential (wifi/admin password) on demand — PM only (US-04.8, SRA §4.1
+     * Infrastructure/Router). The value is never embedded in the show page's HTML; it is fetched
+     * here, only on explicit user action, and the reveal itself is audit-logged.
+     */
+    public function revealInfrastructureSecret(Request $request, Asset $asset, string $field): JsonResponse
+    {
+        $this->authorize('viewSensitive', $asset);
+
+        abort_unless(in_array($field, ['wifi_password', 'admin_password'], true), 404);
+
+        $detail = $asset->infrastructureDetail;
+
+        abort_if($detail === null, 404);
+
+        $value = $field === 'wifi_password' ? $detail->wifi_password : $detail->admin_password;
+
+        $this->auditSecretReveal($asset, $field);
+
+        return response()
+            ->json(['value' => $value ?? ''])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
+    private function auditSecretReveal(Asset $asset, string $field): void
+    {
+        $user = auth()->user();
+
+        WriteAuditLog::dispatch(
+            userId: $user?->getKey() !== null ? (int) $user->getKey() : null,
+            userRole: $user?->role?->value,
+            action: 'secret_revealed',
+            auditableType: $asset->getMorphClass(),
+            auditableId: (int) $asset->getKey(),
+            before: null,
+            // Records which field was viewed, never the secret value itself.
+            after: ['field' => $field],
+            ipAddress: request()->ip(),
+            userAgent: request()->userAgent(),
+        );
     }
 
     public function edit(Asset $asset): View

@@ -200,6 +200,21 @@
                             <x-onyx.input name="cable_type" label="Cable type" type="text" :value="old('cable_type', $id?->cable_type)" :error="$errors->first('cable_type')" helper="e.g. HDMI, RS232, Cat6" />
                             <x-onyx.input name="length"     label="Length (m)" type="number" step="0.01" min="0" :value="old('length', $id?->length)" :error="$errors->first('length')" />
                         </div>
+
+                        {{-- Router / network fields (e.g. Teltonika 4G router) --}}
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                            <x-onyx.input name="imei"        label="IMEI"        type="text" :value="old('imei', $id?->imei)" :error="$errors->first('imei')" />
+                            <x-onyx.input name="mac_address" label="MAC address" type="text" :value="old('mac_address', $id?->mac_address)" :error="$errors->first('mac_address')" helper="Format AA:BB:CC:DD:EE:FF" />
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                            <x-onyx.input name="sim_carrier" label="SIM carrier" type="text" :value="old('sim_carrier', $id?->sim_carrier)" :error="$errors->first('sim_carrier')" helper="e.g. Amaysim" />
+                            <x-onyx.input name="sim_number"  label="SIM number"  type="text" :value="old('sim_number', $id?->sim_number)" :error="$errors->first('sim_number')" />
+                        </div>
+                        <x-onyx.input name="wifi_ssid" label="WiFi SSID" type="text" :value="old('wifi_ssid', $id?->wifi_ssid)" :error="$errors->first('wifi_ssid')" />
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                            <x-onyx.input name="wifi_password"  label="WiFi password"  type="password" :value="old('wifi_password')"  :error="$errors->first('wifi_password')"  helper="{{ $id?->wifi_password ? 'Leave blank to keep the current password.' : 'Optional' }}" />
+                            <x-onyx.input name="admin_password" label="Admin password" type="password" :value="old('admin_password')" :error="$errors->first('admin_password')" helper="{{ $id?->admin_password ? 'Leave blank to keep the current password.' : 'Optional' }}" />
+                        </div>
                     </div>
                 </x-onyx.card>
 

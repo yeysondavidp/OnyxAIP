@@ -53,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
      *   photo.upload   10 uploads/min per IP        — large-payload abuse
      *   qr.lookup      30 req/min per IP            — QR redirect spam
      *   report.download 30 req/min per IP           — signed report/photo download abuse
+     *   secret.reveal  20 req/min per user           — router credential reveal abuse
      */
     private function configureRateLimiters(): void
     {
@@ -93,6 +94,13 @@ class AppServiceProvider extends ServiceProvider
             $user = $request->user();
 
             return Limit::perMinute(10)->by($user ? $user->id : $request->ip());
+        });
+
+        // Router credential reveal — 20/min per authenticated user (§14.3 flood protection)
+        RateLimiter::for('secret.reveal', function (Request $request) {
+            $user = $request->user();
+
+            return Limit::perMinute(20)->by($user ? $user->id : $request->ip());
         });
     }
 }

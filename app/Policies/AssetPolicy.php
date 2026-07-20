@@ -39,6 +39,15 @@ class AssetPolicy
         return $user->role === UserRole::Pm && $this->withinScope($user, $asset);
     }
 
+    /**
+     * Reveal-on-demand for router/network secrets (wifi/admin password) — PM only, never
+     * ClientUser, even though ClientUser can otherwise view the asset (viewAny/view above).
+     */
+    public function viewSensitive(User $user, Asset $asset): bool
+    {
+        return $user->role === UserRole::Pm && $this->withinScope($user, $asset);
+    }
+
     private function withinScope(User $user, Asset $asset): bool
     {
         $permitted = $user->permittedClientIds();

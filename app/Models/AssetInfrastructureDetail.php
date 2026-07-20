@@ -12,6 +12,13 @@ class AssetInfrastructureDetail extends BaseModel
         'length',
         'connected_from_asset_id',
         'connected_to_asset_id',
+        'imei',
+        'mac_address',
+        'wifi_ssid',
+        'wifi_password',
+        'admin_password',
+        'sim_carrier',
+        'sim_number',
     ];
 
     protected function casts(): array
@@ -20,6 +27,10 @@ class AssetInfrastructureDetail extends BaseModel
             'length'                  => 'decimal:2',
             'connected_from_asset_id' => 'integer',
             'connected_to_asset_id'   => 'integer',
+            // Encrypted at rest — decrypted transparently on read, only ever surfaced to the
+            // user via the authorised reveal-on-demand endpoint (AssetController::revealInfrastructureSecret).
+            'wifi_password'  => 'encrypted',
+            'admin_password' => 'encrypted',
         ];
     }
 
