@@ -316,3 +316,71 @@ asset (SRA §16 Q3, §17).
 Scope confirmed with ONYX (unblocks the story); CSV validated and mapped via UI; every row
 validated; bulk insert in a transaction; partial-failure per-row report; PM-only + client-scoped
 authorisation tested; import audited; happy-path integration test; Pint + Larastan clean.
+
+---
+
+## US-04.8 — Infrastructure detail: router/network fields (e.g. Teltonika 4G)
+
+**As** Yeis (PM)
+**I want** to record router/network hardware detail (IMEI, MAC, WiFi SSID/password, admin
+password, SIM carrier + number) against an Infrastructure asset
+**So that** the router credentials a technician needs on-site are in the register instead of a
+side document — raised 2026-07-20 during Asset Registry work (SRA §4.1: "Infrastructure — Cables,
+mounts, **routers**, ancillary hardware").
+
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-04.5 · **Status:** ✅ Done
+
+> **Design decision:** a Teltonika-style router is an **Infrastructure** asset (SRA §4.1 already
+> classifies routers there), not a new `AssetType` case — it reuses the existing `assets.
+> serial_number` base field and extends the existing `asset_infrastructure_details` table (US-04.5)
+> with nullable network columns, rather than forking a parallel type for what is the same
+> base+detail slot with a different hardware shape.
+
+### Acceptance criteria
+- **Given** an Infrastructure asset, **when** created/edited, **then** the form additionally
+  captures `imei`, `mac_address`, `wifi_ssid`, `wifi_password`, `admin_password`, `sim_carrier`,
+  `sim_number` — all nullable (a cable-only Infrastructure asset needs none of them).
+- **Given** `wifi_password` / `admin_password`, **when** stored, **then** they are held with
+  Laravel's `encrypted` Eloquent cast (ciphertext in a `text` column) — the first encrypted
+  field in this codebase; never logged in plaintext (the `Auditable` trait's before/after diffs
+  don't cover per-type detail tables today, so this doesn't rely on the sensitive-field strip).
+- **Given** the edit form, **when** it renders, **then** the two password fields are **write-only
+  and always blank** — the current value is never re-embedded in the page HTML; leaving either
+  blank on save keeps the existing value unchanged (`Asset::preserveBlankSecrets()`), it does not
+  clear it.
+- **Given** the asset detail page, **when** a PM wants to see a stored password, **then** it is
+  **revealed on demand**: hidden by default (masked, no plaintext shipped in the initial page
+  payload), fetched via a dedicated authenticated endpoint only on an explicit "Reveal" click, and
+  every reveal is audit-logged (`action = secret_revealed`, records which field was viewed, never
+  the value itself).
+- **Given** the reveal endpoint, **when** called, **then** it is gated by a new `viewSensitive`
+  policy ability — **PM role only**, never `ClientUser`, even though `ClientUser` can otherwise
+  view the asset — and rate-limited (`secret.reveal`, §14.3) to slow credential-scraping attempts.
+- **Given** a non-Infrastructure asset, **when** saved, **then** none of these columns apply.
+
+### Engineering Bar checklist
+- **Secure:** `wifi_password`/`admin_password` encrypted at rest (`encrypted` cast, not a plain
+  `string` column); never rendered in HTML — reveal is a separate authorised, rate-limited,
+  no-store-cached JSON endpoint; gated by a dedicated `viewSensitive` ability (PM-only), distinct
+  from the general `view` ability `ClientUser` also holds; every reveal audit-logged without
+  storing the secret value in the audit log; `$fillable` only; NOT NULL FK `asset_id` inherited
+  from US-04.5.
+- **Clean:** extends the existing US-04.5 Infrastructure detail table/model rather than adding a
+  new `AssetType` — reuses base `serial_number`, the locked base+detail pattern, and the existing
+  `mac_address` validation regex already used by Media Player (US-04.3).
+- **UX:** router fields revealed inline only when type = Infrastructure; password fields behave
+  like a standard "change password" control (blank = unchanged) with plain helper text; reveal
+  control is a simple Reveal/Hide toggle, ≥44px target, en-AU; inline `@error` on all new fields.
+- **No guessing:** confirmed against SRA §4.1 that routers are Infrastructure, not a new type,
+  before touching the schema; verified there was no existing `encrypted`-cast precedent in the
+  codebase before introducing one; the credentials given as the worked example were real (not
+  placeholders) — PM was advised to rotate them since they were shared in plaintext in chat.
+
+### Definition of Done
+Migration adds the 7 nullable router columns to `asset_infrastructure_details`; model casts the
+two password fields `encrypted`; create/update validation added; blank-password-preserves-existing
+behaviour on edit; `viewSensitive` policy ability (PM-only); `secret.reveal` rate limiter + GET
+reveal route + controller action, `Cache-Control: no-store`, audit-logged as `secret_revealed`;
+edit form fields added (passwords blank-by-default); show page displays plain fields and a
+Reveal/Hide control for the two passwords, gated by `@can('viewSensitive', ...)`; Pint + Larastan
+clean.

@@ -375,3 +375,65 @@ stores' `country` / `state` / `store_timezone` and clears their placeholder note
 Australian stores unaffected (regression-tested); Pint + Larastan clean; happy-path integration
 test for creating/editing a New Zealand store; regression test confirming an Australian store's
 flow is unchanged; test confirming SLA computation does not throw for a New Zealand store.
+
+---
+
+## US-03.6 — Store document library (floor plans, invoices, misc files)
+
+**As** Yeis (PM)
+**I want** to upload and later retrieve arbitrary reference documents against a store — elevation
+plans, invoices, and other store-specific paperwork
+**So that** this information doesn't live only in email/local folders and can be pulled up again
+from the platform when needed (raised 2026-07-20 during Asset Registry work; no such capability
+exists today — confirmed no `store_attachments`-style table, no MediaLibrary dependency).
+
+**Estimate:** 5 · **Priority:** P1 (backlog — next priority in this epic after US-04.8's
+Infrastructure/router fields) · **Depends on:** US-03.1 · **Status:** 📋 Ready
+
+> **Reuse, don't reinvent:** `job_attachments` (EPIC-08) already solves this exact shape —
+> `id`, owning FK, `original_filename`, `stored_path`, `mime_type`, `file_size`, timestamps —
+> served through `Storage::disk('local')` behind an authenticated, scoped download route (see
+> `AssetController::downloadHistoryPhoto` and the `jobs.attachments.download` route for the
+> pattern to copy: never a public disk URL for anything that isn't already a signed/QR asset).
+
+### Acceptance criteria
+- **Given** a store detail/dashboard page, **when** a PM uploads a file, **then** it is validated
+  against a MIME + extension allow-list and a size limit (§14.3; reuse the upload-size config
+  already raised for technician job photos) before being written to a **private** disk — never
+  the public disk — with the original filename and MIME type recorded.
+- **Given** the upload, **when** it succeeds, **then** the PM optionally tags it with a document
+  type (e.g. Floor Plan, Invoice, Other) and an optional note, to make later retrieval faster.
+- **Given** a store's document list, **when** a PM opens the store, **then** all its documents are
+  listed (filename, type, size, uploaded-by, date), scoped to that store only.
+- **Given** a document row, **when** a PM downloads it, **then** the file is streamed through an
+  authenticated, `client_id`-scoped route — the same guard as `StorePolicy::view` — never a raw
+  public URL; a PM outside the store's client scope gets a 403, not the file.
+- **Given** a document, **when** a PM deletes it, **then** it is removed from storage and the DB
+  row deleted (hard delete is acceptable here — these are reference files, not an audit-relevant
+  history record) and the deletion is audited.
+- **Given** no documents exist for a store, **when** the section renders, **then** a designed
+  empty state appears with an upload prompt — not a blank section.
+
+### Engineering Bar checklist
+- **Secure:** MIME + extension allow-list and size cap enforced server-side before write (never
+  trust the client-declared MIME type); private disk only; download route authorises via
+  `StorePolicy` (role + `client_id`), matching the existing `jobs.attachments.download` /
+  `assets.service-history.photo` pattern rather than inventing a new authorisation shape;
+  `$fillable` explicit; FK `store_id` NOT NULL, cascade on store delete.
+- **Clean:** copy the `job_attachments` table/model shape (EPIC-08) — do not introduce Spatie
+  MediaLibrary (not currently a dependency) or a JSON column; one `StoreAttachment` model, one
+  migration, reuse the `Storage`-disk convention already used by `QrCodeService` and
+  `ServiceJobController`'s attachment handlers.
+- **UX:** upload control with progress feedback (non-blocking, §14.1); document type is a simple
+  optional tag, not a mandatory taxonomy; inline `@error` on upload failure in plain language;
+  designed empty/loading/error states; en-AU; ≥44px targets.
+- **No guessing:** read `job_attachments`' migration and `JobAttachment`/`ServiceJobController`
+  attachment methods in full before writing the store equivalent — reuse the exact validation
+  rules and disk configuration rather than re-deriving them; confirm with Yeis whether "document
+  type" needs to be a fixed enum or free-text tag before locking the column.
+
+### Definition of Done
+`store_attachments` table + `StoreAttachment` model following the `job_attachments` shape; upload
+validated (MIME/extension/size) to a private disk; scoped list + authenticated scoped download on
+the store page; delete removes file + row and is audited; empty state designed; Pint + Larastan
+clean; one happy-path integration test; cross-tenant download-deny test.

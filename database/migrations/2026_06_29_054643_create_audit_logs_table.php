@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('user_role', 50)->nullable();
 
             // What happened
-            $table->string('action', 50);           // created | updated | deleted | status_changed
+            $table->string('action', 50);           // created | updated | deleted | status_changed | secret_revealed
             $table->string('auditable_type', 255);  // fully-qualified model class
             $table->unsignedBigInteger('auditable_id');
 

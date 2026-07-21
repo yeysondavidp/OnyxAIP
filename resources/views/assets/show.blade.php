@@ -134,6 +134,47 @@
                     <dl style="display: flex; flex-direction: column; gap: var(--space-3); font-size: var(--fs-14);">
                         @if ($infra->cable_type)<div style="display: flex; gap: var(--space-3);"><dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">Cable type</dt><dd style="color: var(--text-primary);">{{ $infra->cable_type }}</dd></div>@endif
                         @if ($infra->length)<div style="display: flex; gap: var(--space-3);"><dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">Length</dt><dd style="color: var(--text-primary);">{{ $infra->length }} m</dd></div>@endif
+                        @if ($infra->imei)<div style="display: flex; gap: var(--space-3);"><dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">IMEI</dt><dd style="color: var(--text-primary); font-family: monospace; font-size: var(--fs-13);">{{ $infra->imei }}</dd></div>@endif
+                        @if ($infra->mac_address)<div style="display: flex; gap: var(--space-3);"><dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">MAC address</dt><dd style="color: var(--text-primary); font-family: monospace; font-size: var(--fs-13);">{{ $infra->mac_address }}</dd></div>@endif
+                        @if ($infra->wifi_ssid)<div style="display: flex; gap: var(--space-3);"><dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">WiFi SSID</dt><dd style="color: var(--text-primary);">{{ $infra->wifi_ssid }}</dd></div>@endif
+                        @if ($infra->sim_carrier)<div style="display: flex; gap: var(--space-3);"><dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">SIM carrier</dt><dd style="color: var(--text-primary);">{{ $infra->sim_carrier }}</dd></div>@endif
+                        @if ($infra->sim_number)<div style="display: flex; gap: var(--space-3);"><dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">SIM number</dt><dd style="color: var(--text-primary);">{{ $infra->sim_number }}</dd></div>@endif
+
+                        @can('viewSensitive', $asset)
+                            @foreach ([['field' => 'wifi_password', 'label' => 'WiFi password', 'value' => $infra->wifi_password], ['field' => 'admin_password', 'label' => 'Admin password', 'value' => $infra->admin_password]] as $secret)
+                                @continue(! $secret['value'])
+                                <div
+                                    x-data="{ revealed: false, loading: false, value: '' }"
+                                    style="display: flex; gap: var(--space-3); align-items: center;"
+                                >
+                                    <dt style="width: 150px; flex-shrink: 0; color: var(--text-secondary);">{{ $secret['label'] }}</dt>
+                                    <dd style="color: var(--text-primary); display: flex; align-items: center; gap: var(--space-3);">
+                                        <span x-show="!revealed" style="font-family: monospace; letter-spacing: 0.1em;">••••••••</span>
+                                        <span x-show="revealed" x-text="value" style="font-family: monospace; font-size: var(--fs-13);"></span>
+                                        <button
+                                            type="button"
+                                            x-show="!revealed"
+                                            :disabled="loading"
+                                            @click="
+                                                loading = true;
+                                                fetch('{{ route('assets.infrastructure-detail.reveal', [$asset, $secret['field']]) }}', { headers: { 'Accept': 'application/json' } })
+                                                    .then(r => r.json())
+                                                    .then(d => { value = d.value; revealed = true; })
+                                                    .finally(() => { loading = false; });
+                                            "
+                                            style="background: none; border: none; padding: 0; color: var(--bronze-600); font-size: var(--fs-13); font-weight: var(--weight-medium); cursor: pointer; min-height: 44px;"
+                                        ><span x-show="!loading">Reveal</span><span x-show="loading">Loading…</span></button>
+                                        <button
+                                            type="button"
+                                            x-show="revealed"
+                                            x-cloak
+                                            @click="revealed = false; value = ''"
+                                            style="background: none; border: none; padding: 0; color: var(--text-secondary); font-size: var(--fs-13); font-weight: var(--weight-medium); cursor: pointer; min-height: 44px;"
+                                        >Hide</button>
+                                    </dd>
+                                </div>
+                            @endforeach
+                        @endcan
                     </dl>
                 </x-onyx.card>
 

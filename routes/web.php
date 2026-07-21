@@ -133,6 +133,12 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::post('/assets/labels', [LabelSheetController::class, 'batch'])
         ->name('assets.labels.batch');
 
+    // Router/network secret reveal-on-demand (Infrastructure detail) — PM only, rate-limited
+    Route::get('/assets/{asset}/infrastructure-detail/reveal/{field}', [AssetController::class, 'revealInfrastructureSecret'])
+        ->whereIn('field', ['wifi_password', 'admin_password'])
+        ->middleware('throttle:secret.reveal')
+        ->name('assets.infrastructure-detail.reveal');
+
     // Service history photo — no public route, scoped to this asset's own history (US-11.3)
     Route::get('/assets/{asset}/service-history/photo', [AssetController::class, 'downloadHistoryPhoto'])
         ->name('assets.service-history.photo');

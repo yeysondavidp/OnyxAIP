@@ -95,6 +95,7 @@ class Asset extends BaseModel
         return $this->hasOne(AssetLightboxDetail::class);
     }
 
+    /** @return HasOne<AssetInfrastructureDetail, $this> */
     public function infrastructureDetail(): HasOne
     {
         return $this->hasOne(AssetInfrastructureDetail::class);
@@ -170,12 +171,38 @@ class Asset extends BaseModel
         DB::beginTransaction();
         try {
             $this->update($baseData);
+            $this->preserveBlankSecrets($detailData);
             $this->deleteAllDetailRows();
             $this->createDetail($detailData);
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
+        }
+    }
+
+    /**
+     * Router secrets (wifi/admin password) are write-only on the edit form — a blank submission
+     * means "leave unchanged", not "clear it". Refill from the existing encrypted value before
+     * the detail row is replaced, so re-saving the form without retyping a password doesn't wipe it.
+     *
+     * @param  array<string, mixed>  $detailData
+     */
+    private function preserveBlankSecrets(array &$detailData): void
+    {
+        if ($this->asset_type !== AssetType::Infrastructure) {
+            return;
+        }
+
+        $this->loadMissing('infrastructureDetail');
+        $detail = $this->infrastructureDetail;
+
+        if (($detailData['wifi_password'] ?? '') === '') {
+            $detailData['wifi_password'] = $detail?->wifi_password;
+        }
+
+        if (($detailData['admin_password'] ?? '') === '') {
+            $detailData['admin_password'] = $detail?->admin_password;
         }
     }
 
@@ -214,6 +241,13 @@ class Asset extends BaseModel
                 'length'                  => $data['length']                  ?? null,
                 'connected_from_asset_id' => $data['connected_from_asset_id'] ?? null,
                 'connected_to_asset_id'   => $data['connected_to_asset_id']   ?? null,
+                'imei'                    => $data['imei']                    ?? null,
+                'mac_address'             => $data['mac_address']             ?? null,
+                'wifi_ssid'               => $data['wifi_ssid']               ?? null,
+                'wifi_password'           => $data['wifi_password']           ?? null,
+                'admin_password'          => $data['admin_password']          ?? null,
+                'sim_carrier'             => $data['sim_carrier']             ?? null,
+                'sim_number'              => $data['sim_number']              ?? null,
             ]),
             AssetType::WindowFixture => $this->windowFixtureDetail()->create([
                 'fixture_dimensions' => $data['fixture_dimensions'] ?? null,

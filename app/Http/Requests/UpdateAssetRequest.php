@@ -77,6 +77,13 @@ class UpdateAssetRequest extends FormRequest
             'length'                  => ['nullable', 'numeric', 'min:0'],
             'connected_from_asset_id' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('client_id', $clientId)],
             'connected_to_asset_id'   => ['nullable', 'integer', Rule::exists('assets', 'id')->where('client_id', $clientId)],
+            'imei'                    => ['nullable', 'string', 'max:20'],
+            'wifi_ssid'               => ['nullable', 'string', 'max:100'],
+            // Blank = "leave unchanged" (Asset::preserveBlankSecrets) — not required on edit.
+            'wifi_password'  => ['nullable', 'string', 'max:255'],
+            'admin_password' => ['nullable', 'string', 'max:255'],
+            'sim_carrier'    => ['nullable', 'string', 'max:50'],
+            'sim_number'     => ['nullable', 'string', 'max:20'],
 
             // ── Window Fixture ─────────────────────────────────────────────
             'fixture_dimensions' => ['nullable', 'string', 'max:100'],
