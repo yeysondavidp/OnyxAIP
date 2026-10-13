@@ -115,7 +115,7 @@ photo) for 4–5 assets.
 **Sprint goal:** *"No more SSH for data work: an agent can read and update the register through
 an audited MCP endpoint, and JOB-2026-004 can be closed without fake times or GPS."*
 
-Committed: **US-20.1** (5), **US-20.2** (5), **US-20.3** (8) — after ADR-004 is accepted (D6) —
+Committed: **US-20.1** (5), **US-20.2** (5), **US-20.3** (8) —
 then **US-19.8** (5) and **US-19.1** (2). Proof of done: the Miranda screens and Display Groups
 are registered through MCP, not SSH.
 
@@ -147,7 +147,7 @@ template: see the "Exemplars" note at the top of `stories/epic-18-service-report
 | D3 | Accept ADR-003 (AI provider gateway) and which provider to start with | EPIC-18 | Accept; start with a paid model, keep Ollama as the swap path |
 | D4 | Should the SLA clock start at the fault's reported date or at job creation? | US-19.7 | Keep job creation (no SLA change); show the reported date for context |
 | D5 | Photo storage budget and alert thresholds (SRA §16 Q6) | US-00.7 thresholds | Use the ≈1.4 MB/photo data point above |
-| D6 | Accept ADR-004 (agent access through an MCP endpoint with Sanctum tokens) | EPIC-20 | Accept, and add the Cloudflare Access service-token policy on `/mcp` |
+| D6 | ~~Accept ADR-004~~ ✅ Accepted 2026-10-13 | EPIC-20 | Still to do: Cloudflare Access service-token policy on `/mcp` |
 
 ## Sprint 0 — detailed (done)
 

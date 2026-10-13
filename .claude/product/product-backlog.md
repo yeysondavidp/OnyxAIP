@@ -239,7 +239,7 @@ Alpine-first per ADR-001. Each screen is a story.
 
 | ID | Story | Status |
 |----|-------|--------|
-| US-20.1 | Agent service accounts and access tokens | 📋 Ready (after ADR-004) |
+| US-20.1 | Agent service accounts and access tokens | ✅ Done |
 | US-20.2 | MCP endpoint with read tools | 📋 Ready |
 | US-20.3 | Write tools for visit data entry (dry-run first) | 📋 Ready |
 

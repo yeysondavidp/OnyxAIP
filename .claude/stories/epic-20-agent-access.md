@@ -17,7 +17,7 @@ EPIC-04, EPIC-08, EPIC-16 (settings), EPIC-17 (audit viewer). Sprint: 12 (see
 **I want** to create an agent account and issue it an expiring, ability-scoped token
 **So that** an agent can work in the platform under its own name, and I can cut it off at once.
 
-**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-01.2, US-16.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-01.2, US-16.1 · **Status:** ✅ Done (PR #14)
 (after ADR-004 is accepted)
 
 ### Acceptance criteria
