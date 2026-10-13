@@ -51,14 +51,35 @@ Epics are `EPIC-<nn>`. ADRs are `ADR-<nnn>`.
 
 ## Current state of planning
 
-- Architecture: ADR-001 (frontend) and ADR-002 (deployment) **accepted**. Infra resolved: reuse
-  the existing **MySQL** (dedicated DB/user) + stand up a **new project-owned, shareable Redis**
-  (AOF + `noeviction`, namespaced) — ADR-002.
-- Backlog: **all 18 epics mapped and detailed** — `product/product-backlog.md`.
-- **73 user stories written** across `stories/epic-00-*` … `epic-17-*`: ~57 `📋 Ready`, a few
-  `⏸ Blocked` only on an upstream epic, and US-04.7 `🧊 Deferred (post-v1)`. One file per epic,
-  named `epic-<nn>-<slug>.md`.
-- Next: begin **Sprint 0** (EPIC-00 Foundation).
+- Architecture: ADR-001 (frontend) and ADR-002 (deployment) **accepted**. ADR-003 (AI
+  narrative-generation gateway, provider-agnostic) and ADR-004 (agent access via an MCP
+  endpoint) **proposed, pending ONYX review**. Infra
+  resolved: reuse the existing **MySQL** (dedicated DB/user) + stand up a **new project-owned,
+  shareable Redis** (AOF + `noeviction`, namespaced) — ADR-002.
+- Backlog: **21 epics mapped and detailed** — `product/product-backlog.md` (EPIC-00 … EPIC-17 are
+  the original SRA v1.0 scope; EPIC-18 is a new, post-v1-proposed capability — see below;
+  EPIC-19 comes from field findings; EPIC-20 is agent access).
+- **81 user stories written** across `stories/epic-00-*` … `epic-18-*`: ~57 `📋 Ready` in the
+  original v1 scope, a few `⏸ Blocked` only on an upstream epic, US-04.7 `🧊 Deferred (post-v1)`,
+  plus **8 new stories in EPIC-18** (Technical Service Report Generation, AI-assisted — 3
+  `📋 Ready`, 5 `⏸ Blocked` on EPIC-11/EPIC-16). One file per epic, named `epic-<nn>-<slug>.md`.
+- **Delivery (review 2026-10-13):** Sprints 0–10 shipped and are live in production; EPIC-15
+  (client dashboard), EPIC-17 (audit viewer), US-03.4 open faults, US-03.6 and US-12.4 are the
+  remaining v1 gaps. Story `Status:` lines lag behind the code — see the status review in
+  `sprints/sprint-plan.md`.
+- **EPIC-19** (8 stories) captures what the Pandora Miranda visit (12 Oct 2026) could not record.
+- Next: **Sprint 11** — housekeeping, US-03.4 + EPIC-15; then **Sprint 12** — agent access
+  (EPIC-20) and closing the Miranda job (US-19.8).
+
+### EPIC-18 — Technical Service Report Generation (2026-07-24)
+
+Discovered from two real ONYX deliverables (`.claude/files/`): the hand-written Pandora Pitt
+Street Mall report (the target format) and raw technician notes for Dior Boutique Pacific Fair.
+Not in the original SRA §13.1 export table — this is prose, not tabular data. Explored per ONYX's
+request that AI text generation be **provider-agnostic from day one**: any model, paid (Claude,
+GPT) or self-hosted (Ollama running Gemma or similar), swappable by config only — see **ADR-003**
+and `stories/epic-18-service-report-generation.md`. AI drafts; the PM always reviews and finalises
+(never auto-sent). Status: proposed, not yet scheduled into a committed sprint.
 
 ### Resolved decisions (ONYX, 2026-06-24)
 - **Redis:** new project-owned, shareable container with `noeviction` — queue is safe; no open risk.

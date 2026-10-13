@@ -197,6 +197,52 @@ Alpine-first per ADR-001. Each screen is a story.
 |----|-------|
 | US-17.1 | PM audit-log viewer filtered by asset / store / job (§14.5) |
 
+## EPIC-18 — Technical Service Report Generation (AI-assisted) · P2 · 📋 detailed
+
+> New capability, not in the original SRA §13.1 table — discovered from ONYX's real per-visit
+> Technical Service Report deliverable. See `stories/epic-18-service-report-generation.md` and
+> ADR-003 (provider-agnostic AI gateway: paid models and self-hosted Ollama/Gemma, swappable by
+> config only).
+
+| ID | Story | Status |
+|----|-------|--------|
+| US-18.1 | Report context assembly from a validated job | ⏸ Blocked |
+| US-18.2 | Deterministic report document renderer (docx + PDF) | 📋 Ready |
+| US-18.3 | AI narrative generation gateway (provider-agnostic) | 📋 Ready |
+| US-18.4 | Structured prompt builder + section-mapped output parser | ⏸ Blocked |
+| US-18.5 | Fabrication guardrail: cross-check AI output vs. source context | ⏸ Blocked |
+| US-18.6 | PM draft, review and finalise workflow | ⏸ Blocked |
+| US-18.7 | AI provider configuration (Settings) | 📋 Ready |
+| US-18.8 | Audit logging and rate limiting of AI generation calls | ⏸ Blocked |
+
+## EPIC-19 — Field Findings: Content Faults & Player Swaps · P0/P1 · 📋 detailed
+
+> Raised from the Pandora Westfield Miranda visit (12 Oct 2026): a content-only fault and an
+> unprovisioned replacement player that the platform could not record. See
+> `stories/epic-19-field-findings-miranda.md`; decisions D1–D5 (D1, D2 and D4 affect EPIC-19) in `sprints/sprint-plan.md`.
+
+| ID | Story | Status |
+|----|-------|--------|
+| US-19.1 | Screen content specification (derived: orientation · ratio · px) | 📋 Ready |
+| US-19.2 | Asset outcome "Content action required" | ⏸ Decision D2 |
+| US-19.3 | Job follow-up actions ("Next steps") with an owner | 📋 Ready |
+| US-19.4 | Replacement unit on site + one-step player swap | ⏸ Decision D1 |
+| US-19.5 | "Drives store audio" flag on media players | 📋 Ready |
+| US-19.6 | Photo captions and asset tagging | 📋 Ready |
+| US-19.7 | Fault reported date and reporter on a job | 📋 Ready |
+| US-19.8 | PM back-entry of a visit done without the technician link | 📋 Ready |
+
+## EPIC-20 — Agent Access (MCP endpoint) · P1 · 📋 detailed
+
+> Routine PM data work by an AI agent through an authenticated, audited, ability-scoped MCP
+> endpoint instead of SSH + tinker. See `stories/epic-20-agent-access.md` and ADR-004.
+
+| ID | Story | Status |
+|----|-------|--------|
+| US-20.1 | Agent service accounts and access tokens | 📋 Ready (after ADR-004) |
+| US-20.2 | MCP endpoint with read tools | 📋 Ready |
+| US-20.3 | Write tools for visit data entry (dry-run first) | 📋 Ready |
+
 ---
 
 ## SRA §16 open questions — status
@@ -208,4 +254,5 @@ Alpine-first per ADR-001. Each screen is a story.
 4. **Network monitoring auto-status:** out of v1; keep status API extensible (EPIC-06). *(Open — v2.)*
 5. **Multi-store campaign client scope:** ✅ **Resolved (2026-06-24) — campaigns are single-client**
    (EPIC-08.5).
-6. **Photo storage budget/alerts:** sizing → US-00.7; agree numbers with ONYX. *(Open — pre-deploy.)*
+6. **Photo storage budget/alerts:** sizing → US-00.7; agree numbers with ONYX. *(Open — data
+   point: the Miranda visit, 12 Oct 2026, produced 25 photos ≈ 34 MB, ≈ 1.4 MB each.)*
