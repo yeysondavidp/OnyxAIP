@@ -230,6 +230,7 @@ Alpine-first per ADR-001. Each screen is a story.
 | US-19.5 | Audio path in the Display Group topology | 📋 Ready |
 | US-19.6 | Photo captions and asset tagging | 📋 Ready |
 | US-19.7 | Fault reported date and reporter on a job | 📋 Ready |
+| US-19.8 | PM back-entry of a visit done without the technician link | 📋 Ready |
 
 ---
 

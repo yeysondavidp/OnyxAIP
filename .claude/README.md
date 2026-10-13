@@ -66,7 +66,7 @@ Epics are `EPIC-<nn>`. ADRs are `ADR-<nnn>`.
   (client dashboard), EPIC-17 (audit viewer), US-03.4 open faults, US-03.6 and US-12.4 are the
   remaining v1 gaps. Story `Status:` lines lag behind the code — see the status review in
   `sprints/sprint-plan.md`.
-- **EPIC-19** (7 stories) captures what the Pandora Miranda visit (12 Oct 2026) could not record.
+- **EPIC-19** (8 stories) captures what the Pandora Miranda visit (12 Oct 2026) could not record.
 - Next: **Sprint 11** — housekeeping, record the Miranda visit, US-03.4 + EPIC-15.
 
 ### EPIC-18 — Technical Service Report Generation (2026-07-24)

@@ -47,7 +47,7 @@ The story files were not updated as work shipped, so most stories still read `�
 | EPIC-15 Client dashboard | ❌ Not started | client page only shows contact, stores list and SLA profile |
 | EPIC-17 Audit viewer | ❌ Not started | no route/view; audit rows are written but cannot be browsed |
 | EPIC-18 AI reports | 📝 Planned only | ADR-003 proposed, not accepted |
-| EPIC-19 Miranda findings | 📝 Planned (this review) | 7 stories, 2 need ONYX decisions |
+| EPIC-19 Miranda findings | 📝 Planned (this review) | 8 stories, 2 need ONYX decisions |
 
 **Repo state (checked 2026-10-13):**
 - ✅ The guzzle 7.15.1 security bump is on `master` (included in the PR #11 squash) and running
@@ -73,38 +73,37 @@ complete."*
 
 ### H4 — Record the Pandora Miranda visit (12 Oct 2026) in production
 
-State found on 2026-10-13: the **Pandora** client and store **Miranda** (`PAN-MIR-001`) exist;
+State found on 2026-10-13: the **Pandora** client and store **Miranda** (`PAN-MIR-001`) existed;
 job **JOB-2026-004** "Pandora - Miranda - Oct 2026" (Fault Repair) was created on the day but is
-still `invited`: the technician link was never used, so there are no assets, photos or
-checkpoints. The store has **no assets** registered. Serial numbers and MAC addresses come from
-the local report (`.claude/files/reports/`), never from this file.
+still `invited` (the technician link was never used) and the store had no assets. Serial numbers
+and MAC addresses come from the local report and photos, never from this file.
 
-1. Register the assets at `PAN-MIR-001` (same naming as the Pandora Townsville player: model
-   `MIB 19`, manufacturer Beat):
-   - Front window player — Active.
-   - Feature wall + audio player (old unit) — Active, in service.
-   - Replacement player — on site, **not in service** (until US-19.4 exists: say so in the asset
-     notes and keep it out of any Display Group).
-   - Front window portrait screen (in totem) and feature wall screen; audio amplifier as an
-     Infrastructure asset connected from the old player.
-2. Display Groups: "Front window" (front window player → portrait screen); "Feature wall" (old
-   player → feature wall screen).
-3. JOB-2026-004: attach the affected assets and the final PDF report (PM attachment). The visit
-   happened offline, and the state machine only allows `Completed` from `In Progress`
-   (`JobTransitionService`); force-complete cannot close an `Invited` job. Closing it needs an
-   ONYX decision: either the technician replays the flow through the link (photos and outcomes
-   recorded, but times and GPS would be from the replay day, not 12 Oct) or the job waits for a
-   PM back-entry story (below). Outcome once it closes, until US-19.2 exists: **Active** with a
-   per-asset note "Content action required: …".
-4. Next steps until US-19.3 exists: record the three steps in the job notes: (1) portrait content
-   9:16, 1080 × 1920 px to the front window player; (2) content + audio schedule to the
-   replacement player; (3) PM confirms the swap with the Store Manager — no return visit
-   expected.
-5. Once US-19.3/US-19.4 ship, convert those notes into follow-ups and record the swap.
+**Done 2026-10-13** (tinker script mirroring `AssetController::store`,
+`ServiceJobController::syncAffectedAssets` and `::storeAttachment`; audit rows have no user):
+- Assets `PAN-PLY-0001` front window player (MIB 19), `PAN-PLY-0002` feature wall + audio player
+  (old unit, model **MIB X** per its label, not MIB 19), `PAN-PLY-0003` replacement player (MIB 19,
+  `Offline` + note until a Spare status exists, D1), `PAN-INF-0001` audio amplifier (model unknown,
+  connected from `PAN-PLY-0002`).
+- All three players attached to JOB-2026-004; the two in-service players auto-moved to
+  `Under Maintenance` as the UI does.
+- PM attachments on the job: the final PDF report and the 6 photos used in it.
+- Photo finding: both new players' boxes are labelled "Music & Signage LEFT & Signage RIGHT"
+  by the vendor (Buffer Australia), i.e. each is provisioned as a music + two-screen profile;
+  worth confirming with the content team when assigning the schedules.
 
-**Gap found while planning H4:** there is no supported way to record a visit that happened
-outside the technician link (no GPS, no checkpoints). If this repeats, add a story for PM
-back-entry of an offline visit rather than forcing jobs through.
+**Still open:**
+1. **Screens and Display Groups** — the front window portrait screen (glass totem) and the feature
+   wall landscape screen are not registered: their size and model are not visible in any photo
+   and the form requires them. Get size/model from ONYX or the next visit, then create both
+   Display Groups ("Front window", "Feature wall").
+2. **Closing JOB-2026-004** — decided 2026-10-13: wait for **US-19.8** (PM back-entry of an
+   offline visit) rather than replaying the technician flow with wrong times/GPS. The job stays
+   `invited` until then (its link expires 2026-10-15; that is expected). Outcome once it closes,
+   until US-19.2 exists: **Active** with a per-asset note "Content action required: …".
+3. Next steps (in the PDF until US-19.3 exists): (1) portrait content 9:16, 1080 × 1920 px to the
+   front window player; (2) content + audio schedule to the replacement player; (3) PM confirms
+   the swap with the Store Manager — no return visit expected. Once US-19.3/US-19.4 ship, convert
+   them into follow-ups and record the swap.
 
 **Storage data point for SRA §16 Q6:** this visit produced 25 photos ≈ 34 MB (≈ 1.4 MB per
 photo) for 4–5 assets.
@@ -114,7 +113,8 @@ photo) for 4–5 assets.
 **Sprint goal:** *"The next content-fault visit can be recorded completely in the platform:
 what's wrong, who fixes it, which unit is waiting to be swapped and which photo shows what."*
 
-Committed stories (see `stories/epic-19-field-findings-miranda.md`): **US-19.1** (2), **US-19.3**
+Committed stories (see `stories/epic-19-field-findings-miranda.md`): **US-19.8** (5, first: it
+closes JOB-2026-004), **US-19.1** (2), **US-19.3**
 (5), **US-19.2** (3, after D2), **US-19.6** (5), **US-19.5** (3), **US-19.4** (8, after D1).
 Stretch: **US-19.7** (3). Order matters: 19.3 before 19.2 (19.2 creates follow-ups).
 

@@ -282,3 +282,46 @@ just when the job was created.
 
 ### Definition of Done
 Fields captured, displayed, audited on change; tests; Pint + Larastan + Pest green.
+
+---
+
+## US-19.8 — PM back-entry of a visit done without the technician link
+
+**As** Yeis (PM)
+**I want** to record a visit that really happened but was not run through the technician link
+(no checkpoints, no in-app GPS) and close the job honestly
+**So that** jobs like JOB-2026-004 (Miranda, 12 Oct 2026: link never opened, evidence in a PDF
+and phone photos) reach Validated and feed service history without fake replay times or GPS.
+
+**Estimate:** 5 · **Priority:** P0 · **Depends on:** US-08.3, US-11.1 · **Status:** 📋 Ready
+(decided with ONYX 2026-10-13: preferred over replaying the technician flow)
+
+### Acceptance criteria
+- **Given** a job in Invited or Accepted status, **when** the PM chooses "Record offline visit",
+  **then** they must enter the actual visit date and start/end time (store timezone, stored UTC,
+  not in the future), the technician(s) who attended, a reason (≤ 1000 chars), at least one
+  photo or attachment as evidence, and a per-asset outcome + note for each affected asset.
+- **Given** a valid back-entry, **then** the job moves to **Completed** through
+  `JobTransitionService` (a new, PM-only `Invited/Accepted → Completed` path that requires the
+  back-entry record), each assigned technician's status is closed, and normal Validation
+  (US-11.1) follows unchanged.
+- **Given** a back-entered job, **then** job page, service history and reports label it
+  "Recorded by PM — no on-site GPS", and no GPS or checkpoint rows are fabricated.
+- **Given** a technician link for that job, **then** it stops working once back-entry is saved.
+- **Given** a non-PM user or a job of another tenant, **then** the action is denied.
+
+### Engineering Bar checklist
+- **Secure:** PM + `client_id` scope via policy; FormRequest validates dates, technicians
+  (must be assigned to the job), assets (must be on the job) and evidence MIME (reuse the
+  `UploadJobAttachmentRequest` allow-list); DB: back-entry columns or table with NOT NULL actor,
+  visit times and reason; the new transition is allowed only when that record exists.
+- **Clean:** reuse `JobTransitionService`, `JobAssetOutcome` and the attachment storage path; one
+  service class for the back-entry; fully audited.
+- **UX:** one form with a clear warning that this replaces the technician flow; inline errors.
+- **No guessing:** read `JobTransitionService` guards and the `job_technicians` status enum
+  before adding the path.
+
+### Definition of Done
+Back-entry form → Completed → Validated works end-to-end with evidence and outcomes, labelled
+everywhere, link revoked, audited; feature tests incl. cross-tenant and non-PM denial; Pint +
+Larastan + Pest green. Then close JOB-2026-004 with it.
