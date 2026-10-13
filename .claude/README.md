@@ -56,9 +56,9 @@ Epics are `EPIC-<nn>`. ADRs are `ADR-<nnn>`.
   (agent access via an MCP endpoint) **accepted 2026-10-13**. Infra
   resolved: reuse the existing **MySQL** (dedicated DB/user) + stand up a **new project-owned,
   shareable Redis** (AOF + `noeviction`, namespaced) — ADR-002.
-- Backlog: **21 epics mapped and detailed** — `product/product-backlog.md` (EPIC-00 … EPIC-17 are
+- Backlog: **22 epics mapped and detailed** — `product/product-backlog.md` (EPIC-00 … EPIC-17 are
   the original SRA v1.0 scope; EPIC-18 is a new, post-v1-proposed capability — see below;
-  EPIC-19 comes from field findings; EPIC-20 is agent access).
+  EPIC-19 comes from field findings; EPIC-20 is agent access; EPIC-21 is field device discovery).
 - **81 user stories written** across `stories/epic-00-*` … `epic-18-*`: ~57 `📋 Ready` in the
   original v1 scope, a few `⏸ Blocked` only on an upstream epic, US-04.7 `🧊 Deferred (post-v1)`,
   plus **8 new stories in EPIC-18** (Technical Service Report Generation, AI-assisted — 3
