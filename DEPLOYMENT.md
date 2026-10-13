@@ -1,7 +1,8 @@
 # Deploying ONYX AIP
 
-Production runs on `192.168.50.30` (LAN), as a git checkout at `~/onyx-aip` on the
-`digital` user, running the images CI builds — see `docker-compose.yml`'s header
+Production runs on the Proxmox VM `vm-app` (LAN; moved there from the old `orion` host
+on 2026-09-09), as a git checkout at `/opt/onyx-aip` owned by the `onyx`
+user, served at `https://pulse.onyxvisual.com.au`, running the images CI builds — see `docker-compose.yml`'s header
 comment for the full picture. This file is the day-to-day operator's guide.
 
 **This repo is public.** Never commit credentials, `.env`, or connection strings —
@@ -46,8 +47,8 @@ Once the merge's `Build & Push Docker Images` workflow run is green (check
 the server and:
 
 ```bash
-ssh digital@192.168.50.30
-cd ~/onyx-aip
+ssh vm-app        # host alias from your ~/.ssh/config (user onyx)
+cd /opt/onyx-aip
 git pull
 docker compose pull
 docker compose up -d
@@ -78,8 +79,8 @@ docker compose exec app php artisan import:vendor-store-players {csv} [--dry-run
 To get a file into the container first (e.g. a CSV to import):
 
 ```bash
-scp somefile.csv digital@192.168.50.30:/tmp/
-ssh digital@192.168.50.30 "cd ~/onyx-aip && docker compose cp /tmp/somefile.csv app:/tmp/somefile.csv"
+scp somefile.csv vm-app:/tmp/
+ssh vm-app "cd /opt/onyx-aip && docker compose cp /tmp/somefile.csv app:/tmp/somefile.csv"
 ```
 
 ## Local development
@@ -94,16 +95,16 @@ docker compose build
 docker compose up -d
 ```
 
-## Databases on 192.168.50.30
+## Databases
 
 Three separate databases, three separate credentials — never share them
 across environments:
 
 | Database | Purpose | Notes |
 |---|---|---|
-| `onyx_aip` | Local dev | Shares its MySQL user with `onyx_aip_test` — see `TESTING.md` for the recommended (not yet applied) hardening to separate them. |
-| `onyx_aip_test` | Local Pest runs | See `TESTING.md`. |
-| `onyx_aip_prod` | Production | Dedicated `onyx_aip_prod` user, scoped to this database only. Credentials live in `~/onyx-aip/.env` on the server (`chmod 600`, gitignored) — nowhere else. |
+| `onyx_aip` | Local dev (shared dev MySQL on `orion`) | Shares its MySQL user with `onyx_aip_test` — see `TESTING.md` for the recommended (not yet applied) hardening to separate them. |
+| `onyx_aip_test` | Local Pest runs (shared dev MySQL on `orion`) | See `TESTING.md`. |
+| `onyx_aip_prod` | Production (MySQL on the `vm-data` VM) | Dedicated `onyx_aip_prod` user, scoped to this database only. Credentials live in `/opt/onyx-aip/.env` on `vm-app` (`chmod 600`, gitignored) — nowhere else. |
 
 ## Provisioning scripts
 

@@ -20,7 +20,7 @@ below. `ci.yml` here now does the same: build + Pint + Larastan in CI, Pest loca
 
 ## The test database
 
-Tests run against `onyx_aip_test` on the same MySQL server as dev (`192.168.50.30`) — a separate
+Tests run against `onyx_aip_test` on the same MySQL server as dev (the shared `orion` host) — a separate
 **database**, but currently the **same MySQL user** (`onyx_aip`) as dev. `phpunit.xml` hardcodes
 `DB_DATABASE=onyx_aip_test` as a safety net (PHPUnit sets it before any `.env` loads, so it always
 wins), so the suite can't accidentally point at the dev database by a missing/misconfigured env
@@ -29,7 +29,7 @@ should: a wrong *value* could still authenticate against dev, whereas a dedicate
 simply fail to connect. `RefreshDatabase` runs `migrate:fresh` on every run, so a mistaken target
 means real data loss, not just a test failure.
 
-**Recommended hardening** (not yet applied — needs a MySQL root/admin run on `192.168.50.30`):
+**Recommended hardening** (not yet applied — needs a MySQL root/admin run on the `orion` MySQL host):
 
 ```sql
 CREATE DATABASE IF NOT EXISTS onyx_aip_test
