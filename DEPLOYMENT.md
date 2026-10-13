@@ -94,6 +94,11 @@ claude mcp add --transport http onyx-aip https://pulse.onyxvisual.com.au/mcp \
   --header "Authorization: Bearer <key from Settings → Agent access>"
 ```
 
+Read tools are always safe; write tools (register assets, change status,
+attach assets to a job, create display groups, upload attachments) apply the
+same checks as the web forms, support `dry_run: true`, and there is no delete,
+validate, cancel or force-complete tool. Tick only the abilities the agent needs.
+
 Never commit a key. Keys start with `onyx_` so GitHub secret scanning can catch
 one that leaks; revoke it in Settings straight away if that happens. Every tool
 call is audit-logged under the agent's name and limited to 60 calls a minute

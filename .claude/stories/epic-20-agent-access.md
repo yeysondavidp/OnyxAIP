@@ -83,7 +83,7 @@ denial; Claude Code connection documented in `DEPLOYMENT.md`; Pint + Larastan + 
 **I want** to register assets, attach them to a job, create display groups and attach evidence
 **So that** a visit like Miranda can be recorded from its report without SSH.
 
-**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-20.2 · **Status:** 📋 Ready
+**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-20.2 · **Status:** ✅ Done in code — Miranda proof pending deploy + screen data
 
 ### Acceptance criteria
 - **Given** `assets:write`, **then** `create_asset` and `update_asset` validate with

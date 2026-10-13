@@ -23,7 +23,8 @@ class DisplayGroupPolicy
 
     public function create(User $user, Store $store): bool
     {
-        return $user->role === UserRole::Pm && $this->storeInScope($user, $store);
+        return ($user->role === UserRole::Pm || $user->agentCan(AgentAbility::JobsWrite))
+            && $this->storeInScope($user, $store);
     }
 
     public function update(User $user, DisplayGroup $group): bool

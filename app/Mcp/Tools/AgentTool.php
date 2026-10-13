@@ -7,8 +7,13 @@ use App\Jobs\WriteAuditLog;
 use App\Models\Asset;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -71,6 +76,45 @@ abstract class AgentTool extends Tool
     protected function authorizeFor(User $user, string $ability, mixed $arguments): void
     {
         Gate::forUser($user)->authorize($ability, $arguments);
+    }
+
+    /**
+     * Validate with a web FormRequest's own rules, messages and after-hooks, with
+     * its route parameters bound — so a tool can never drift from the form.
+     *
+     * @param  class-string<FormRequest>  $formRequest
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $routeParameters
+     * @return array<string, mixed>
+     *
+     * @throws ValidationException
+     */
+    protected function validateWith(string $formRequest, array $data, array $routeParameters = []): array
+    {
+        $form  = $formRequest::create('/', 'POST', $data);
+        $route = (new Route('POST', '/', []))->bind($form);
+
+        foreach ($routeParameters as $name => $value) {
+            $route->setParameter($name, $value);
+        }
+
+        $form->setRouteResolver(fn () => $route);
+
+        // rules() is declared by each FormRequest, not by the base class.
+        $rules     = method_exists($form, 'rules') ? $form->rules() : [];
+        $validator = Validator::make($data, $rules, $form->messages(), $form->attributes());
+
+        if (method_exists($form, 'withValidator')) {
+            $form->withValidator($validator);
+        }
+
+        return $validator->validate();
+    }
+
+    /** @param array<string, mixed> $planned */
+    protected function dryRunResponse(string $summary, array $planned): Response
+    {
+        return Response::json(['dry_run' => true, 'would' => $summary, 'planned' => $planned]);
     }
 
     /**

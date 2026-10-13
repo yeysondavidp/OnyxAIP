@@ -36,6 +36,16 @@ class ServiceJobPolicy
         return $user->role === UserRole::Pm && $this->withinScope($user, $job);
     }
 
+    /**
+     * Add affected assets to a job. Separate from update() — which also gates
+     * invitations — so an agent key can attach assets and nothing else (US-20.3).
+     */
+    public function attachAssets(User $user, ServiceJob $job): bool
+    {
+        return ($user->role === UserRole::Pm || $user->agentCan(AgentAbility::JobsWrite))
+            && $this->withinScope($user, $job);
+    }
+
     public function delete(User $user, ServiceJob $job): bool
     {
         return $user->role === UserRole::Pm && $this->withinScope($user, $job);
@@ -66,6 +76,13 @@ class ServiceJobPolicy
     }
 
     /** PM can manage attachments on a job they own. */
+    /** Upload a PM attachment — agents may add evidence (US-20.3) but never delete it. */
+    public function addAttachment(User $user, ServiceJob $job): bool
+    {
+        return ($user->role === UserRole::Pm || $user->agentCan(AgentAbility::AttachmentsWrite))
+            && $this->withinScope($user, $job);
+    }
+
     public function manageAttachments(User $user, ServiceJob $job): bool
     {
         return $user->role === UserRole::Pm && $this->withinScope($user, $job);
