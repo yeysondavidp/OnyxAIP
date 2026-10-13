@@ -28,12 +28,13 @@ class AssetPolicy
 
     public function create(User $user): bool
     {
-        return $user->role === UserRole::Pm;
+        return $user->role === UserRole::Pm || $user->agentCan(AgentAbility::AssetsWrite);
     }
 
     public function update(User $user, Asset $asset): bool
     {
-        return $user->role === UserRole::Pm && $this->withinScope($user, $asset);
+        return ($user->role === UserRole::Pm || $user->agentCan(AgentAbility::AssetsWrite))
+            && $this->withinScope($user, $asset);
     }
 
     public function delete(User $user, Asset $asset): bool

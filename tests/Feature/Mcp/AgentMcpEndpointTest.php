@@ -8,51 +8,13 @@ use App\Models\AssetInfrastructureDetail;
 use App\Models\ServiceJob;
 use App\Models\Store;
 use App\Models\User;
-use App\Services\AgentAccessService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Request;
 use Laravel\Sanctum\Sanctum;
 
 uses(RefreshDatabase::class);
-
-/** @param list<AgentAbility> $abilities */
-function agentKey(array $abilities = [AgentAbility::RegisterRead], ?int $clientId = null): string
-{
-    [, $token] = app(AgentAccessService::class)
-        ->createAgent(User::factory()->pm()->create(), 'Claude (agent)', $clientId, $abilities, 30);
-
-    return $token;
-}
-
-function mcp(?string $key, string $method, array $params = []): TestResponse
-{
-    $headers = ['Accept' => 'application/json, text/event-stream'];
-
-    if ($key !== null) {
-        $headers['Authorization'] = 'Bearer '.$key;
-    }
-
-    return test()->withHeaders($headers)->postJson('/mcp', [
-        'jsonrpc' => '2.0',
-        'id'      => 1,
-        'method'  => $method,
-        'params'  => $params,
-    ]);
-}
-
-function callTool(string $key, string $tool, array $arguments = []): array
-{
-    $result = mcp($key, 'tools/call', ['name' => $tool, 'arguments' => $arguments])->assertOk()->json('result');
-
-    return [
-        'isError' => $result['isError'] ?? false,
-        'data'    => json_decode($result['content'][0]['text'] ?? 'null', true),
-        'text'    => $result['content'][0]['text'] ?? '',
-    ];
-}
 
 it('refuses calls without an access key', function () {
     mcp(null, 'tools/list')->assertUnauthorized();
@@ -93,7 +55,7 @@ it('lists the read tools for a key with register:read', function () {
 it('hides and refuses read tools for a key without register:read', function () {
     $key = agentKey([AgentAbility::AssetsWrite]);
 
-    expect(mcp($key, 'tools/list')->json('result.tools'))->toBe([]);
+    expect(collect(mcp($key, 'tools/list')->json('result.tools'))->pluck('name')->intersect(['get_job', 'get_store', 'search_assets', 'search_stores'])->all())->toBe([]);
     mcp($key, 'tools/call', ['name' => 'get_store', 'arguments' => ['store_code' => 'X']])
         ->assertJsonPath('error.message', 'Tool [get_store] not found.');
 });

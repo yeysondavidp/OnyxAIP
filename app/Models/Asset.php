@@ -140,6 +140,27 @@ class Asset extends BaseModel
 
     // ── Detail helpers ─────────────────────────────────────────────────────────
 
+    /** Base-table columns; every other validated key belongs to the type-specific detail row. */
+    public const BASE_FIELDS = [
+        'asset_code', 'asset_type', 'client_id', 'store_id', 'asset_name',
+        'manufacturer', 'model', 'serial_number', 'purchase_date', 'warranty_expiry',
+        'install_date', 'asset_status', 'location_notes', 'parent_asset_id', 'notes',
+    ];
+
+    /**
+     * Split validated form input into base and detail data (asset form + MCP tools).
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    public static function splitValidated(array $validated): array
+    {
+        return [
+            array_intersect_key($validated, array_flip(self::BASE_FIELDS)),
+            array_diff_key($validated, array_flip(self::BASE_FIELDS)),
+        ];
+    }
+
     /**
      * Create this asset together with its type-specific detail row in one transaction.
      *

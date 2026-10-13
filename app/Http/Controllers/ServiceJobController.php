@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AssetStatus;
 use App\Enums\EarlyStartWindow;
 use App\Enums\JobStatus;
 use App\Enums\JobType;
@@ -20,7 +19,8 @@ use App\Models\JobPhoto;
 use App\Models\ServiceJob;
 use App\Models\Store;
 use App\Models\TechnicianProfile;
-use App\Services\AssetTransitionService;
+use App\Services\JobAssetService;
+use App\Services\JobAttachmentService;
 use App\Services\JobValidationService;
 use App\Services\Sla\SlaClockService;
 use Illuminate\Http\RedirectResponse;
@@ -99,7 +99,7 @@ class ServiceJobController extends Controller
             ]);
 
             // Attach affected assets — auto-transition eligible ones to UnderMaintenance (US-08.2)
-            $this->syncAffectedAssets($job, $validated['asset_ids'] ?? []);
+            app(JobAssetService::class)->sync($job, $validated['asset_ids'] ?? []);
 
             // Assign technicians (US-08.4)
             $this->syncTechnicians($job, $validated['technician_profile_ids'] ?? []);
@@ -175,7 +175,7 @@ class ServiceJobController extends Controller
                 'client_name'  => $validated['client_name']  ?? null,
             ]);
 
-            $this->syncAffectedAssets($job, $validated['asset_ids'] ?? []);
+            app(JobAssetService::class)->sync($job, $validated['asset_ids'] ?? []);
             $this->syncTechnicians($job, $validated['technician_profile_ids'] ?? []);
         });
 
@@ -299,26 +299,11 @@ class ServiceJobController extends Controller
     // ── Attachments ────────────────────────────────────────────────────────────
 
     /** Upload a PM attachment (US-08.6). */
-    public function storeAttachment(UploadJobAttachmentRequest $request, ServiceJob $job): RedirectResponse
+    public function storeAttachment(UploadJobAttachmentRequest $request, ServiceJob $job, JobAttachmentService $attachments): RedirectResponse
     {
         $file = $request->file('attachment');
 
-        // Detect MIME server-side — never trust client-supplied content-type
-        $detectedMime = $file->getMimeType() ?? '';
-
-        if (! in_array($detectedMime, UploadJobAttachmentRequest::ALLOWED_MIMES, strict: true)) {
-            return back()->withErrors(['attachment' => 'File type is not permitted.']);
-        }
-
-        $path = $file->store('job-attachments/'.$job->id, 'local');
-
-        JobAttachment::create([
-            'job_id'            => $job->id,
-            'original_filename' => $file->getClientOriginalName(),
-            'stored_path'       => (string) $path,
-            'mime_type'         => $detectedMime,
-            'file_size'         => $file->getSize() ?: null,
-        ]);
+        $attachments->store($job, $file, $file->getClientOriginalName());
 
         return back()->with('success', 'Attachment uploaded.');
     }
@@ -414,55 +399,6 @@ class ServiceJobController extends Controller
                 ? EarlyStartWindow::Anytime->value
                 : ($validated['early_start_window'] ?? EarlyStartWindow::Anytime->value),
         ];
-    }
-
-    /**
-     * Sync the affected-assets pivot and auto-transition eligible assets
-     * to UnderMaintenance via the AssetTransitionService (US-08.2).
-     *
-     * Captures each asset's status_before on the pivot at attach time — the
-     * reference point US-11.1 needs at validation, taken before the auto-
-     * transition below. Preserved across re-syncs on edit (never overwritten
-     * once set) so re-saving the job form doesn't lose the original value.
-     *
-     * @param  list<int>  $assetIds
-     */
-    private function syncAffectedAssets(ServiceJob $job, array $assetIds): void
-    {
-        $existingStatusBefore = $job->assets()->pluck('job_assets.status_before', 'assets.id')->toArray();
-
-        if (empty($assetIds)) {
-            $job->assets()->sync([]);
-
-            return;
-        }
-
-        $assets = Asset::whereIn('id', $assetIds)->get(['id', 'asset_status']);
-
-        $syncData = [];
-        foreach ($assets as $asset) {
-            $syncData[$asset->id] = [
-                'status_before' => $existingStatusBefore[$asset->id] ?? $asset->asset_status->value,
-            ];
-        }
-
-        $job->assets()->sync($syncData);
-
-        $transitionService = app(AssetTransitionService::class);
-
-        $assets
-            ->filter(fn (Asset $a) => in_array($a->asset_status, [AssetStatus::Active, AssetStatus::Faulty], strict: true))
-            ->each(function (Asset $asset) use ($transitionService): void {
-                try {
-                    $transitionService->transitionTo(
-                        $asset,
-                        AssetStatus::UnderMaintenance,
-                        systemLabel: 'system:job_created'
-                    );
-                } catch (\InvalidArgumentException) {
-                    // Already Under Maintenance or ineligible — skip silently
-                }
-            });
     }
 
     /**

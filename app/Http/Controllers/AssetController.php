@@ -45,7 +45,7 @@ class AssetController extends Controller
     {
         $validated = $request->validated();
 
-        [$baseData, $detailData] = $this->splitValidated($validated);
+        [$baseData, $detailData] = Asset::splitValidated($validated);
 
         $asset = Asset::createWithDetail($baseData, $detailData);
 
@@ -139,7 +139,7 @@ class AssetController extends Controller
     {
         $validated = $request->validated();
 
-        [$baseData, $detailData] = $this->splitValidated($validated);
+        [$baseData, $detailData] = Asset::splitValidated($validated);
 
         $statusBefore = $asset->asset_status;
 
@@ -176,23 +176,6 @@ class AssetController extends Controller
         return redirect()
             ->route('assets.index')
             ->with('success', "Asset '{$asset->asset_name}' has been decommissioned.");
-    }
-
-    /**
-     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
-     */
-    private function splitValidated(mixed $validated): array
-    {
-        $baseKeys = [
-            'asset_code', 'asset_type', 'client_id', 'store_id', 'asset_name',
-            'manufacturer', 'model', 'serial_number', 'purchase_date', 'warranty_expiry',
-            'install_date', 'asset_status', 'location_notes', 'parent_asset_id', 'notes',
-        ];
-
-        $baseData   = array_intersect_key($validated, array_flip($baseKeys));
-        $detailData = array_diff_key($validated, array_flip($baseKeys));
-
-        return [$baseData, $detailData];
     }
 
     /** @return array<string, mixed> */

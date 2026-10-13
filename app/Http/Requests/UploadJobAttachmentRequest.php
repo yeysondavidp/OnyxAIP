@@ -31,7 +31,7 @@ class UploadJobAttachmentRequest extends FormRequest
         /** @var ServiceJob $job */
         $job = $this->route('job');
 
-        return $this->user()->can('manageAttachments', $job);
+        return $this->user()->can('addAttachment', $job);
     }
 
     public function rules(): array
