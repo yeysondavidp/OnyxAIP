@@ -20,7 +20,7 @@
             <div style="display: flex; gap: var(--space-2); flex-shrink: 0;">
                 <x-onyx.button href="{{ route('stores.display-groups.edit', [$group->store_id, $group]) }}" variant="outline" size="xs">Edit</x-onyx.button>
                 <div x-data="{}" @onyx-dialog-confirm="$refs.deleteDisplayGroupForm{{ $group->id }}.submit()">
-                    <x-onyx.dialog :title="'Delete display group \"'.$group->group_name.'\"?'" confirmLabel="Delete" confirmTone="critical">
+                    <x-onyx.dialog :title="'Delete display group “'.$group->group_name.'”?'" confirmLabel="Delete" confirmTone="critical">
                         <x-slot:trigger>
                             <x-onyx.button type="button" variant="danger-outline" size="xs">Delete</x-onyx.button>
                         </x-slot:trigger>
