@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\AgentAbility;
 use App\Enums\UserRole;
 use App\Models\Store;
 use App\Models\User;
@@ -17,7 +18,8 @@ class StorePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role === UserRole::Pm || $user->role === UserRole::ClientUser;
+        return $user->role === UserRole::Pm || $user->role === UserRole::ClientUser
+                                            || $user->agentCan(AgentAbility::RegisterRead);
     }
 
     public function view(User $user, Store $store): bool

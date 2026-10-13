@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\AgentAbility;
 use App\Enums\UserRole;
 use App\Models\DisplayGroup;
 use App\Models\Store;
@@ -16,7 +17,8 @@ class DisplayGroupPolicy
 {
     public function viewAny(User $user, Store $store): bool
     {
-        return $user->role === UserRole::Pm && $this->storeInScope($user, $store);
+        return ($user->role === UserRole::Pm || $user->agentCan(AgentAbility::RegisterRead))
+            && $this->storeInScope($user, $store);
     }
 
     public function create(User $user, Store $store): bool

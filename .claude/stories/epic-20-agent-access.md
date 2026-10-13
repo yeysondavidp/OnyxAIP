@@ -17,7 +17,7 @@ EPIC-04, EPIC-08, EPIC-16 (settings), EPIC-17 (audit viewer). Sprint: 12 (see
 **I want** to create an agent account and issue it an expiring, ability-scoped token
 **So that** an agent can work in the platform under its own name, and I can cut it off at once.
 
-**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-01.2, US-16.1 · **Status:** ✅ Done (PR #14)
+**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-01.2, US-16.1 · **Status:** ✅ Done
 (after ADR-004 is accepted)
 
 ### Acceptance criteria
@@ -50,7 +50,7 @@ ability allow-list and non-PM denial; Pint + Larastan + Pest green.
 **I want** to read stores, assets, jobs and display groups through MCP tools
 **So that** I can check the register before proposing or making changes.
 
-**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-20.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-20.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** a valid token with `register:read`, **when** the agent calls `search_stores`,

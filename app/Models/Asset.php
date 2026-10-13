@@ -85,6 +85,7 @@ class Asset extends BaseModel
         return $this->hasOne(AssetScreenDetail::class);
     }
 
+    /** @return HasOne<AssetPlayerDetail, $this> */
     public function playerDetail(): HasOne
     {
         return $this->hasOne(AssetPlayerDetail::class);

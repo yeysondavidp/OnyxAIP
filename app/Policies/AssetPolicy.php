@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\AgentAbility;
 use App\Enums\UserRole;
 use App\Models\Asset;
 use App\Models\User;
@@ -16,7 +17,8 @@ class AssetPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role === UserRole::Pm || $user->role === UserRole::ClientUser;
+        return $user->role === UserRole::Pm || $user->role === UserRole::ClientUser
+                                            || $user->agentCan(AgentAbility::RegisterRead);
     }
 
     public function view(User $user, Asset $asset): bool
