@@ -243,6 +243,18 @@ Alpine-first per ADR-001. Each screen is a story.
 | US-20.2 | MCP endpoint with read tools | ✅ Done |
 | US-20.3 | Write tools for visit data entry (dry-run first) | ✅ Done (Miranda proof pending) |
 
+## EPIC-21 — Field Device Discovery (AI-assisted, two-step verification) · P1 · 📋 detailed
+
+> First visits to unknown stores: the technician registers devices on site, a label photo
+> pre-fills the fields (Claude Haiku 5.5 via ADR-003), the technician confirms, the PM verifies.
+> See `stories/epic-21-field-device-discovery.md`.
+
+| ID | Story | Status |
+|----|-------|--------|
+| US-21.1 | Technician registers a device found on site (pending verification) | 📋 Ready |
+| US-21.2 | Read the label photo and pre-fill the device (AI, technician confirms) | ⏸ ADR-003 + D8 |
+| US-21.3 | PM verification queue for devices found in the field | 📋 Ready |
+
 ---
 
 ## SRA §16 open questions — status

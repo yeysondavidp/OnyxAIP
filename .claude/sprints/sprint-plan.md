@@ -25,6 +25,7 @@ velocity will calibrate after Sprint 0–1.
 | **13** | Field findings (Miranda) | EPIC-19 (rest) | Content faults, owned follow-ups, player swaps, audio-role flag, captioned photos — what the 12 Oct 2026 visit could not record. |
 | **14** | Polish & trust | EPIC-17, US-03.6, US-12.4 | Audit viewer, store document library, NZ public holidays. |
 | **15** | AI-assisted service reports | EPIC-18 | *(Post-v1, needs ADR-003 accepted)* The per-visit Technical Service Report drafts itself from validated job data; PM reviews/edits before finalising. Provider-agnostic (ADR-003). Uses EPIC-19 captions and follow-ups. |
+| **16** | Field device discovery | EPIC-21 | Technicians register unknown devices on first visits; label photos pre-fill the fields (Haiku 5.5), technician confirms, PM verifies. |
 
 ## Status review — 2026-10-13
 
@@ -138,6 +139,21 @@ public holidays — detail the story first, it is still `🧊`).
 EPIC-18 once ADR-003 is accepted (D3). The Miranda report is the third exemplar and changes the
 template: see the "Exemplars" note at the top of `stories/epic-18-service-report-generation.md`.
 
+## Field audit of the technician flow — 2026-10-14
+
+JOB-2026-004 was run end to end through its signed link on a 390 px viewport (no GPS; notes state
+the real visit date). Bugs found, fixed in the "technician flow fixes" PR:
+1. Unselected asset outcomes were silently saved as **Active (resolved)** (`|| 'active'`).
+2. PM validation had no **"no change"** outcome, so an Offline spare could only become Active or
+   Decommissioned.
+3. Scheduled time stored as typed (store-local) but read back as UTC — 16:30 shown as 03:30 next day.
+4. Native `confirm()` when location is denied on Screen 1 (Screen 4 already shows a friendly note).
+5. Duration printed as "2.1833333333333 min".
+
+Smaller UX items for later: 44 px remove-photo targets, no Cancel on before-photos, no QR/MAC in
+the brief, notes hidden until an outcome is chosen, no upload percentage. The bigger lesson — the
+flow duplicates the work of the hand-written report — is what EPIC-18, US-19.8 and EPIC-21 address.
+
 ## Decisions needed from ONYX
 
 | # | Decision | Blocks | Recommendation |
@@ -147,6 +163,8 @@ template: see the "Exemplars" note at the top of `stories/epic-18-service-report
 | D3 | Accept ADR-003 (AI provider gateway) and which provider to start with | EPIC-18 | Accept; start with a paid model, keep Ollama as the swap path |
 | D4 | Should the SLA clock start at the fault's reported date or at job creation? | US-19.7 | Keep job creation (no SLA change); show the reported date for context |
 | D5 | Photo storage budget and alert thresholds (SRA §16 Q6) | US-00.7 thresholds | Use the ≈1.4 MB/photo data point above |
+| D7 | Add a `pending_verification` asset status (excluded from reports until a PM verifies) | US-21.1 | Yes — one status on the asset, not a parallel table |
+| D8 | Client consent for sending store/label photos to an AI provider (Pandora, Dior, Sephora) | US-21.2, EPIC-18 | Confirm per client before enabling; self-hosted model (ADR-003) as the fallback |
 | D6 | ~~Accept ADR-004~~ ✅ Accepted 2026-10-13 | EPIC-20 | Still to do: Cloudflare Access service-token policy on `/mcp` |
 
 ## Sprint 0 — detailed (done)
