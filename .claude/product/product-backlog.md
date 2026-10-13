@@ -227,10 +227,21 @@ Alpine-first per ADR-001. Each screen is a story.
 | US-19.2 | Asset outcome "Content action required" | ⏸ Decision D2 |
 | US-19.3 | Job follow-up actions ("Next steps") with an owner | 📋 Ready |
 | US-19.4 | Replacement unit on site + one-step player swap | ⏸ Decision D1 |
-| US-19.5 | Audio path in the Display Group topology | 📋 Ready |
+| US-19.5 | "Drives store audio" flag on media players | 📋 Ready |
 | US-19.6 | Photo captions and asset tagging | 📋 Ready |
 | US-19.7 | Fault reported date and reporter on a job | 📋 Ready |
 | US-19.8 | PM back-entry of a visit done without the technician link | 📋 Ready |
+
+## EPIC-20 — Agent Access (MCP endpoint) · P1 · 📋 detailed
+
+> Routine PM data work by an AI agent through an authenticated, audited, ability-scoped MCP
+> endpoint instead of SSH + tinker. See `stories/epic-20-agent-access.md` and ADR-004.
+
+| ID | Story | Status |
+|----|-------|--------|
+| US-20.1 | Agent service accounts and access tokens | 📋 Ready (after ADR-004) |
+| US-20.2 | MCP endpoint with read tools | 📋 Ready |
+| US-20.3 | Write tools for visit data entry (dry-run first) | 📋 Ready |
 
 ---
 

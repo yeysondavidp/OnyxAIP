@@ -52,12 +52,13 @@ Epics are `EPIC-<nn>`. ADRs are `ADR-<nnn>`.
 ## Current state of planning
 
 - Architecture: ADR-001 (frontend) and ADR-002 (deployment) **accepted**. ADR-003 (AI
-  narrative-generation gateway, provider-agnostic) **proposed, pending ONYX review**. Infra
+  narrative-generation gateway, provider-agnostic) and ADR-004 (agent access via an MCP
+  endpoint) **proposed, pending ONYX review**. Infra
   resolved: reuse the existing **MySQL** (dedicated DB/user) + stand up a **new project-owned,
   shareable Redis** (AOF + `noeviction`, namespaced) — ADR-002.
-- Backlog: **20 epics mapped and detailed** — `product/product-backlog.md` (EPIC-00 … EPIC-17 are
+- Backlog: **21 epics mapped and detailed** — `product/product-backlog.md` (EPIC-00 … EPIC-17 are
   the original SRA v1.0 scope; EPIC-18 is a new, post-v1-proposed capability — see below;
-  EPIC-19 comes from field findings).
+  EPIC-19 comes from field findings; EPIC-20 is agent access).
 - **81 user stories written** across `stories/epic-00-*` … `epic-18-*`: ~57 `📋 Ready` in the
   original v1 scope, a few `⏸ Blocked` only on an upstream epic, US-04.7 `🧊 Deferred (post-v1)`,
   plus **8 new stories in EPIC-18** (Technical Service Report Generation, AI-assisted — 3
@@ -67,7 +68,8 @@ Epics are `EPIC-<nn>`. ADRs are `ADR-<nnn>`.
   remaining v1 gaps. Story `Status:` lines lag behind the code — see the status review in
   `sprints/sprint-plan.md`.
 - **EPIC-19** (8 stories) captures what the Pandora Miranda visit (12 Oct 2026) could not record.
-- Next: **Sprint 11** — housekeeping, record the Miranda visit, US-03.4 + EPIC-15.
+- Next: **Sprint 11** — housekeeping, US-03.4 + EPIC-15; then **Sprint 12** — agent access
+  (EPIC-20) and closing the Miranda job (US-19.8).
 
 ### EPIC-18 — Technical Service Report Generation (2026-07-24)
 

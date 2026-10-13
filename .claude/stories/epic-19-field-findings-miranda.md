@@ -31,8 +31,9 @@
 >   remediation sub-job, which implies a site visit (EPIC-08.5 / US-11.2).
 > - No way to register a **replacement unit that is on site but not yet in service**, nor a
 >   one-step **player swap** in a Display Group (`DisplayGroup` has a single `player_asset_id`).
-> - **Audio** is invisible in the topology even though Infrastructure already has
->   `connected_from_asset_id` / `connected_to_asset_id` (`AssetInfrastructureDetail`).
+> - Nothing records that a player also drives the **store audio**, so a swap or reboot can
+>   silently cut the store's music. (The amplifier is not ONYX's to support and is not
+>   registered.)
 > - The screen's required **content spec** (orientation + resolution) is stored
 >   (`asset_screen_details.resolution_width/height`, `orientation`) but never surfaced as a
 >   content requirement — which is exactly what the content team got wrong.
@@ -192,32 +193,36 @@ display-group uniqueness); Pint + Larastan + Pest green.
 
 ---
 
-## US-19.5 — Audio path in the Display Group topology
+## US-19.5 — "Drives store audio" flag on media players
 
 **As** Yeis (PM) and the technician
-**I want** the topology to show that a player also drives the store audio (and through which
-amplifier)
-**So that** nobody swaps or reboots the feature-wall player without knowing the store will lose
-its music (Miranda).
+**I want** a player to be marked as also driving the store's audio
+**So that** nobody swaps, reboots or decommissions the feature-wall player without knowing the
+store will lose its music (Miranda).
 
-**Estimate:** 3 · **Priority:** P1 · **Depends on:** US-05.2, US-04.5 · **Status:** 📋 Ready
+> The audio amplifier itself is **not** registered: ONYX does not maintain or support it
+> (decided 2026-10-13). Only the player's audio role is recorded.
+
+**Estimate:** 2 · **Priority:** P1 · **Depends on:** US-04.3, US-05.2 · **Status:** 📋 Ready
 
 ### Acceptance criteria
-- **Given** an Infrastructure asset (e.g. amplifier) with `connected_from_asset_id` = the group's
-  player, **then** the topology card, the technician Screen 3 asset panel and the Display Group
-  report (US-14.5) list it under the player ("Audio: <asset name> · <model>").
-- **Given** a player that drives audio, **when** a swap (US-19.4) or Decommission is requested,
+- **Given** a Media Player, **when** the PM edits it, **then** they can tick "Also drives the
+  store audio" (default off).
+- **Given** a player with the flag, **then** the topology card, the technician Screen 3 asset
+  panel and the Display Group report (US-14.5) show "Also drives store audio" next to it.
+- **Given** a player with the flag, **when** a swap (US-19.4) or Decommission is requested,
   **then** the confirmation warns "This player also drives the store audio".
-- **Given** no connected infrastructure, **then** nothing extra is shown (no empty noise).
 
 ### Engineering Bar checklist
-- **Secure:** read-only; existing scopes. **Clean:** reuse the existing connected-asset FKs — no
-  new table. **UX:** clear icon + text, not colour alone. **No guessing:** check how
-  `connected_from/to` are populated in production before relying on direction.
+- **Secure:** PM-only edit through the existing asset FormRequest + policy; boolean NOT NULL
+  default false on `asset_player_details`; `$fillable` updated.
+- **Clean:** one column, rendered by the existing topology partial; no new table.
+- **UX:** icon + text, not colour alone; plain-language warning.
+- **No guessing:** confirm the player detail form partial before adding the field.
 
 ### Definition of Done
-Audio/infrastructure shown on the three surfaces, warning on swap/decommission; feature test;
-Pint + Larastan + Pest green.
+Flag editable, shown on the three surfaces, warning on swap/decommission; feature test; Pint +
+Larastan + Pest green.
 
 ---
 

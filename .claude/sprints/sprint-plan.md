@@ -21,9 +21,10 @@ velocity will calibrate after Sprint 0–1.
 | **9** | SLA | EPIC-12 | SLA profiles, business-hours clock with AU holidays, breach-risk flags across views. |
 | **10** | Visibility & polish | EPIC-13, EPIC-14, EPIC-15, EPIC-16, EPIC-17 | Notifications, reports/exports, client dashboard, settings, audit viewer. v1 feature-complete. |
 | **11** | Close v1 + housekeeping | EPIC-03 (US-03.4), EPIC-15, ops | Repo/docs back in sync with production, Miranda visit recorded, open-faults and client dashboards real. **v1 functionally complete.** |
-| **12** | Field findings (Miranda) | EPIC-19 | Content faults, owned follow-ups, player swaps, audio topology, captioned photos — what the 12 Oct 2026 visit could not record. |
-| **13** | Polish & trust | EPIC-17, US-03.6, US-12.4 | Audit viewer, store document library, NZ public holidays. |
-| **14** | AI-assisted service reports | EPIC-18 | *(Post-v1, needs ADR-003 accepted)* The per-visit Technical Service Report drafts itself from validated job data; PM reviews/edits before finalising. Provider-agnostic (ADR-003). Uses EPIC-19 captions and follow-ups. |
+| **12** | Agent access + close Miranda | EPIC-20, US-19.8, US-19.1 | Agents work through an authenticated, audited MCP endpoint instead of SSH (ADR-004); offline visits can be closed honestly; screens show their content spec. |
+| **13** | Field findings (Miranda) | EPIC-19 (rest) | Content faults, owned follow-ups, player swaps, audio-role flag, captioned photos — what the 12 Oct 2026 visit could not record. |
+| **14** | Polish & trust | EPIC-17, US-03.6, US-12.4 | Audit viewer, store document library, NZ public holidays. |
+| **15** | AI-assisted service reports | EPIC-18 | *(Post-v1, needs ADR-003 accepted)* The per-visit Technical Service Report drafts itself from validated job data; PM reviews/edits before finalising. Provider-agnostic (ADR-003). Uses EPIC-19 captions and follow-ups. |
 
 ## Status review — 2026-10-13
 
@@ -48,6 +49,7 @@ The story files were not updated as work shipped, so most stories still read `�
 | EPIC-17 Audit viewer | ❌ Not started | no route/view; audit rows are written but cannot be browsed |
 | EPIC-18 AI reports | 📝 Planned only | ADR-003 proposed, not accepted |
 | EPIC-19 Miranda findings | 📝 Planned (this review) | 8 stories, 2 need ONYX decisions |
+| EPIC-20 Agent access | 📝 Planned (this review) | 3 stories, needs ADR-004 accepted |
 
 **Repo state (checked 2026-10-13):**
 - ✅ The guzzle 7.15.1 security bump is on `master` (included in the PR #11 squash) and running
@@ -82,8 +84,8 @@ and MAC addresses come from the local report and photos, never from this file.
 `ServiceJobController::syncAffectedAssets` and `::storeAttachment`; audit rows have no user):
 - Assets `PAN-PLY-0001` front window player (MIB 19), `PAN-PLY-0002` feature wall + audio player
   (old unit, model **MIB X** per its label, not MIB 19), `PAN-PLY-0003` replacement player (MIB 19,
-  `Offline` + note until a Spare status exists, D1), `PAN-INF-0001` audio amplifier (model unknown,
-  connected from `PAN-PLY-0002`).
+  `Offline` + note until a Spare status exists, D1). The store audio amplifier is deliberately
+  **not** registered: ONYX does not maintain or support it.
 - All three players attached to JOB-2026-004; the two in-service players auto-moved to
   `Under Maintenance` as the UI does.
 - PM attachments on the job: the final PDF report and the 6 photos used in it.
@@ -96,7 +98,7 @@ and MAC addresses come from the local report and photos, never from this file.
    wall landscape screen are not registered: their size and model are not visible in any photo
    and the form requires them. Get size/model from ONYX or the next visit, then create both
    Display Groups ("Front window", "Feature wall").
-2. **Closing JOB-2026-004** — decided 2026-10-13: wait for **US-19.8** (PM back-entry of an
+2. **Closing JOB-2026-004** — decided 2026-10-13: wait for **US-19.8** (Sprint 12) (PM back-entry of an
    offline visit) rather than replaying the technician flow with wrong times/GPS. The job stays
    `invited` until then (its link expires 2026-10-15; that is expected). Outcome once it closes,
    until US-19.2 exists: **Active** with a per-asset note "Content action required: …".
@@ -108,22 +110,30 @@ and MAC addresses come from the local report and photos, never from this file.
 **Storage data point for SRA §16 Q6:** this visit produced 25 photos ≈ 34 MB (≈ 1.4 MB per
 photo) for 4–5 assets.
 
-## Sprint 12 — Field findings (Miranda)
+## Sprint 12 — Agent access + close Miranda
+
+**Sprint goal:** *"No more SSH for data work: an agent can read and update the register through
+an audited MCP endpoint, and JOB-2026-004 can be closed without fake times or GPS."*
+
+Committed: **US-20.1** (5), **US-20.2** (5), **US-20.3** (8) — after ADR-004 is accepted (D6) —
+then **US-19.8** (5) and **US-19.1** (2). Proof of done: the Miranda screens and Display Groups
+are registered through MCP, not SSH.
+
+## Sprint 13 — Field findings (Miranda)
 
 **Sprint goal:** *"The next content-fault visit can be recorded completely in the platform:
 what's wrong, who fixes it, which unit is waiting to be swapped and which photo shows what."*
 
-Committed stories (see `stories/epic-19-field-findings-miranda.md`): **US-19.8** (5, first: it
-closes JOB-2026-004), **US-19.1** (2), **US-19.3**
-(5), **US-19.2** (3, after D2), **US-19.6** (5), **US-19.5** (3), **US-19.4** (8, after D1).
-Stretch: **US-19.7** (3). Order matters: 19.3 before 19.2 (19.2 creates follow-ups).
+Committed stories (see `stories/epic-19-field-findings-miranda.md`): **US-19.3** (5), **US-19.2**
+(3, after D2), **US-19.6** (5), **US-19.5** (2), **US-19.4** (8, after D1). Stretch: **US-19.7**
+(3). Order matters: 19.3 before 19.2 (19.2 creates follow-ups).
 
-## Sprint 13 — Polish & trust
+## Sprint 14 — Polish & trust
 
 **US-17.1** + **US-17.2** (audit viewer), **US-03.6** (store document library), **US-12.4** (NZ
 public holidays — detail the story first, it is still `🧊`).
 
-## Sprint 14 — AI-assisted service reports
+## Sprint 15 — AI-assisted service reports
 
 EPIC-18 once ADR-003 is accepted (D3). The Miranda report is the third exemplar and changes the
 template: see the "Exemplars" note at the top of `stories/epic-18-service-report-generation.md`.
@@ -137,6 +147,7 @@ template: see the "Exemplars" note at the top of `stories/epic-18-service-report
 | D3 | Accept ADR-003 (AI provider gateway) and which provider to start with | EPIC-18 | Accept; start with a paid model, keep Ollama as the swap path |
 | D4 | Should the SLA clock start at the fault's reported date or at job creation? | US-19.7 | Keep job creation (no SLA change); show the reported date for context |
 | D5 | Photo storage budget and alert thresholds (SRA §16 Q6) | US-00.7 thresholds | Use the ≈1.4 MB/photo data point above |
+| D6 | Accept ADR-004 (agent access through an MCP endpoint with Sanctum tokens) | EPIC-20 | Accept, and add the Cloudflare Access service-token policy on `/mcp` |
 
 ## Sprint 0 — detailed (done)
 
