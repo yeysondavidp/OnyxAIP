@@ -45,6 +45,16 @@ it('pm can view display group index for their store', function () {
         ->assertOk();
 });
 
+it('store and display group pages render an existing group', function () {
+    $store = Store::factory()->create();
+    $group = DisplayGroup::factory()->create(['store_id' => $store->id, 'player_asset_id' => playerAt($store)->id, 'group_name' => 'Front window']);
+    $group->screens()->attach(screenAt($store));
+    $pm = pmFor($store);
+
+    $this->actingAs($pm)->get(route('stores.show', $store))->assertOk()->assertSee('Front window');
+    $this->actingAs($pm)->get(route('stores.display-groups.index', $store))->assertOk()->assertSee('Delete display group');
+});
+
 it('unauthenticated user is redirected from display group index', function () {
     $store = Store::factory()->create();
 
