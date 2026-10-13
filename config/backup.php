@@ -2,18 +2,9 @@
 
 return [
     /*
-     * Absolute path for daily backup directories.
-     * In production, mount a separate host path here so backups survive
-     * a container rebuild: e.g. /data/backups/onyx-aip
-     * Defaults to storage/backups (same volume as app storage — useful for
-     * quick restores but not a substitute for off-site copies).
+     * Backups themselves are taken by Proxmox (docker/docs/backup-restore.md);
+     * this file only configures the storage / Redis alerts (US-00.7).
      */
-    'path' => env('BACKUP_PATH', storage_path('backups')),
-
-    /*
-     * Number of daily backup directories to retain before pruning.
-     */
-    'retain_days' => (int) env('BACKUP_RETAIN_DAYS', 7),
 
     /*
      * Email address to receive storage / Redis memory alert notifications.

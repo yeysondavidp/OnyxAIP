@@ -8,10 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// ── Daily backup: DB dump + storage snapshot at 02:00 (US-00.7) ─────────
-Schedule::command('backup:application')
-    ->dailyAt('02:00')
-    ->withoutOverlapping();
+// Backups are taken by Proxmox (nightly vzdump of both VMs to the NAS),
+// not by the app — see docker/docs/backup-restore.md.
 
 // ── Daily threshold check at 08:00 (business hours) (US-00.7) ───────────
 Schedule::command('storage:check-thresholds')
