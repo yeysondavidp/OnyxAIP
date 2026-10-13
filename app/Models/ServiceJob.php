@@ -128,6 +128,7 @@ class ServiceJob extends BaseModel
     }
 
     /** Affected assets for this job (US-08.2). status_before is captured at attach time (US-11.1). */
+    /** @return BelongsToMany<Asset, $this> */
     public function assets(): BelongsToMany
     {
         return $this->belongsToMany(Asset::class, 'job_assets', 'job_id', 'asset_id')
@@ -149,7 +150,11 @@ class ServiceJob extends BaseModel
         )->withPivot('technician_status', 'invitation_token', 'token_expires_at', 'force_complete_reason');
     }
 
-    /** PM attachments (US-08.6). */
+    /**
+     * PM attachments (US-08.6).
+     *
+     * @return HasMany<JobAttachment, $this>
+     */
     public function attachments(): HasMany
     {
         return $this->hasMany(JobAttachment::class, 'job_id');

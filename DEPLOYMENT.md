@@ -83,6 +83,22 @@ scp somefile.csv vm-app:/tmp/
 ssh vm-app "cd /opt/onyx-aip && docker compose cp /tmp/somefile.csv app:/tmp/somefile.csv"
 ```
 
+## Agent access (MCP)
+
+AI agents (e.g. Claude Code) work through the app's MCP endpoint instead of SSH
+(ADR-004). A PM creates the agent and copies its key in **Settings → Agent
+access**; the key is shown once and expires in 90 days at most.
+
+```bash
+claude mcp add --transport http onyx-aip https://pulse.onyxvisual.com.au/mcp \
+  --header "Authorization: Bearer <key from Settings → Agent access>"
+```
+
+Never commit a key. Keys start with `onyx_` so GitHub secret scanning can catch
+one that leaks; revoke it in Settings straight away if that happens. Every tool
+call is audit-logged under the agent's name and limited to 60 calls a minute
+per key.
+
 ## Local development
 
 `docker-compose.yml` only references prebuilt ghcr.io images (no `build:`) so

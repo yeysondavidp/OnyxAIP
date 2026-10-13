@@ -50,7 +50,7 @@ ability allow-list and non-PM denial; Pint + Larastan + Pest green.
 **I want** to read stores, assets, jobs and display groups through MCP tools
 **So that** I can check the register before proposing or making changes.
 
-**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-20.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-20.1 · **Status:** ✅ Done (PR #15)
 
 ### Acceptance criteria
 - **Given** a valid token with `register:read`, **when** the agent calls `search_stores`,

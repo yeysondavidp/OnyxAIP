@@ -59,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
      *   qr.lookup      30 req/min per IP            — QR redirect spam
      *   report.download 30 req/min per IP           — signed report/photo download abuse
      *   secret.reveal  20 req/min per user           — router credential reveal abuse
+     *   agent          60 req/min per access key     — MCP tool calls (ADR-004)
      */
     private function configureRateLimiters(): void
     {
@@ -76,6 +77,12 @@ class AppServiceProvider extends ServiceProvider
                 ->response(fn () => back()->withErrors([
                     'email' => 'Too many requests. Please try again in a minute.',
                 ]));
+        });
+
+        RateLimiter::for('agent', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+
+            return Limit::perMinute(60)->by('agent:'.($token instanceof PersonalAccessToken ? $token->getKey() : $request->ip()));
         });
 
         RateLimiter::for('guest.job', function (Request $request) {

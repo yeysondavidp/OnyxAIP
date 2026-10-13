@@ -27,11 +27,13 @@ class DisplayGroup extends BaseModel
         return $this->belongsTo(Store::class);
     }
 
+    /** @return BelongsTo<Asset, $this> */
     public function player(): BelongsTo
     {
         return $this->belongsTo(Asset::class, 'player_asset_id');
     }
 
+    /** @return BelongsToMany<Asset, $this> */
     public function screens(): BelongsToMany
     {
         return $this->belongsToMany(Asset::class, 'display_group_screens', 'display_group_id', 'asset_id');

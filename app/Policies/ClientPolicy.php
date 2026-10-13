@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\AgentAbility;
 use App\Enums\UserRole;
 use App\Models\Client;
 use App\Models\User;
@@ -23,7 +24,8 @@ class ClientPolicy
      *  happens via ClientScope, so viewAny just gates portal entry. */
     public function viewAny(User $user): bool
     {
-        return $user->role === UserRole::Pm || $user->role === UserRole::ClientUser;
+        return $user->role === UserRole::Pm || $user->role === UserRole::ClientUser
+                                            || $user->agentCan(AgentAbility::RegisterRead);
     }
 
     public function view(User $user, Client $client): bool
@@ -32,9 +34,13 @@ class ClientPolicy
             return true;
         }
 
-        // client_user may only view their own client record.
+        // client_user (and a client-scoped agent) may only view their own client record.
         if ($user->role === UserRole::ClientUser) {
             return $user->client_id === $client->id;
+        }
+
+        if ($user->agentCan(AgentAbility::RegisterRead)) {
+            return $user->client_id === null || $user->client_id === $client->id;
         }
 
         return false;
