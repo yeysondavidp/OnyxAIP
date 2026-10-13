@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\AgentAbility;
 use App\Enums\UserRole;
 use App\Models\ServiceJob;
 use App\Models\User;
@@ -16,12 +17,13 @@ class ServiceJobPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role === UserRole::Pm;
+        return $user->role === UserRole::Pm || $user->agentCan(AgentAbility::RegisterRead);
     }
 
     public function view(User $user, ServiceJob $job): bool
     {
-        return $user->role === UserRole::Pm && $this->withinScope($user, $job);
+        return ($user->role === UserRole::Pm || $user->agentCan(AgentAbility::RegisterRead))
+            && $this->withinScope($user, $job);
     }
 
     public function create(User $user): bool

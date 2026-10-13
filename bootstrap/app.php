@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAgentToken;
 use App\Http\Middleware\EnsurePmRole;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -20,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [SecurityHeaders::class]);
 
         // role:pm → EnsurePmRole (used on PM portal route group)
-        $middleware->alias(['role' => EnsurePmRole::class]);
+        $middleware->alias(['role' => EnsurePmRole::class, 'agent' => EnsureAgentToken::class]);
 
         // The Cloudflare Tunnel terminates TLS and forwards to nginx over plain
         // HTTP; nginx is only reachable on 127.0.0.1 (docker-compose.yml), so the
@@ -33,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->is('mcp'),
         );
 
         // Render a plain-language, mobile-first page for invalid/expired signed URLs

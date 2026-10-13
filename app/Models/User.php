@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AgentAbility;
 use App\Enums\UserRole;
 use App\Traits\Auditable;
 use Database\Factories\UserFactory;
@@ -54,6 +55,15 @@ class User extends Authenticatable implements CanResetPasswordContract
     public function isAgent(): bool
     {
         return $this->role === UserRole::Agent;
+    }
+
+    /**
+     * True only for an agent authenticated with a token that carries this ability
+     * (ADR-004). Policies use it so an ability never bypasses the client scope.
+     */
+    public function agentCan(AgentAbility $ability): bool
+    {
+        return $this->isAgent() && $this->tokenCan($ability->value);
     }
 
     // ── Tenant scope ──────────────────────────────────────────────────────────
