@@ -1,145 +1,92 @@
 # ONYX AIP — Backup & Restore Procedure
 
-**Scope:** v1 single-server Docker Compose deployment (ADR-002).
-**Automated by:** `backup:application` Artisan command, scheduled daily at 02:00 via the
-`scheduler` container.
+**Scope:** production on Proxmox (`vm-app` runs the containers, `vm-data` runs MySQL).
+**Automated by:** a Proxmox backup job, not by the app.
 
 ---
 
 ## What gets backed up
 
-| Artefact | File in backup dir | Command used |
-|----------|--------------------|--------------|
-| MySQL database | `db_YYYYMMDD_HHmmss.sql.gz` | `mysqldump \| gzip` |
-| App storage (photos, QR labels, generated PDFs) | `storage_YYYYMMDD_HHmmss.tar.gz` | `tar -czf` |
+| What | How | When | Kept |
+|------|-----|------|------|
+| `vm-data` (MySQL, all databases) | `vzdump` snapshot, guest-agent `fs-freeze` | daily 02:30 | 7 daily, 4 weekly, 3 monthly |
+| `vm-app` (containers, `.env`, photos/attachments in `/srv/docker/onyx-aip/storage`, logs) | same job | daily 02:30 | same |
 
-Backups land in `BACKUP_PATH/{YYYY-MM-DD}/`. Daily directories older than `BACKUP_RETAIN_DAYS`
-(default: 7) are pruned automatically.
+Backups are written to the NFS storage `nas-backup` (the office ReadyNAS), so they live off the
+Proxmox host. They are **not** off-site: losing the office loses both servers and backups.
 
----
-
-## Backup location
-
-`BACKUP_PATH` defaults to `storage/backups` inside the container. **For production**, bind-mount
-a separate host path so backups survive a container rebuild and can be copied off-server:
-
-```yaml
-# docker-compose.yml (app + scheduler services)
-volumes:
-  - /data/backups/onyx-aip:/backups
-```
-
-```env
-# .env
-BACKUP_PATH=/backups
-```
+The app used to run its own `backup:application` command; it was removed (2026-10-13) because it
+wrote inside the container, so every deploy deleted its backups.
 
 ---
 
-## Running a manual backup
+## Taking a manual backup (before a risky change)
+
+On the Proxmox host, run the same job on demand for the VM you are about to change:
 
 ```bash
-docker compose exec app php artisan backup:application
+vzdump <vmid> --storage nas-backup --mode snapshot --compress zstd
 ```
 
-Verify the output shows both `DB →` and `Storage →` lines and exits 0.
+Routine deploys don't need this: the nightly job plus `RUN_MIGRATIONS_ON_BOOT` migrations that
+are additive are enough. Do it before destructive migrations or data fixes.
 
 ---
 
 ## Restore procedure
 
-> **Always test restores on a staging/clone environment first. Never restore directly to
-> production without confirming the backup is clean.**
+> Restore to a **new VM ID first** and check it before touching production.
 
-### 1 — Identify the backup to restore
+1. On the Proxmox host, list backups: `pvesm list nas-backup --content backup`.
+2. Restore to an unused VM ID, unique storage, no network:
+   `qmrestore <backup-volid> <new-vmid> --storage local-lvm --unique 1`, then
+   `qm set <new-vmid> --net0 virtio,link_down=1` before starting it.
+3. Start it and check the data. With the network down, MySQL on the copy will **not** start
+   as is: `bind-address` includes `vm-data`'s LAN IP, which the copy cannot bind. On the copy
+   only, add `/etc/mysql/mysql.conf.d/zz-restore-drill.cnf` with `[mysqld]` /
+   `bind-address=127.0.0.1` / `mysqlx-bind-address=127.0.0.1` and restart MySQL. Row counts
+   need the MySQL root password (keep it in the password manager); without it,
+   `innochecksum` on the stopped server's `.ibd` files still proves the pages are intact.
+   Then either:
+   - **drill:** stop and destroy the copy (`qm stop` / `qm destroy`), or
+   - **real restore:** stop the production VM, swap the restored VM in (same VM ID and network),
+     start it and run the smoke test below.
 
-```bash
-ls /data/backups/onyx-aip/          # list daily dirs
-ls /data/backups/onyx-aip/2026-06-29/  # inspect a specific day
-```
+### Smoke test after a real restore
 
-### 2 — Stop the app (prevent writes during restore)
+- Open the app and confirm the dashboard and a store page load.
+- `docker compose logs app` on `vm-app` has no PHP errors.
+- A recent asset and service job are visible.
 
-```bash
-docker compose stop app queue scheduler
-```
+---
 
-### 3 — Restore the database
+## Logs
 
-```bash
-# Copy the dump out of the container / mount (adjust path as needed)
-DUMP=/data/backups/onyx-aip/2026-06-29/db_20260629_020000.sql.gz
-
-# Decompress and pipe into MySQL
-# Replace DB_HOST, DB_USER, DB_NAME, DB_PASS with values from .env
-gunzip -c "$DUMP" | docker exec -i <mysql_container> \
-    mysql -h DB_HOST -u DB_USER -pDB_PASS DB_NAME
-```
-
-Verify row counts match expectations:
-
-```bash
-docker exec -i <mysql_container> mysql -u DB_USER -pDB_PASS DB_NAME \
-    -e "SELECT COUNT(*) FROM audit_logs;"
-```
-
-### 4 — Restore app storage
-
-```bash
-SNAP=/data/backups/onyx-aip/2026-06-29/storage_20260629_020000.tar.gz
-
-# Clear existing storage/app (dangerous — confirm first)
-docker compose exec app rm -rf storage/app/*
-
-# Extract the snapshot
-docker run --rm \
-    -v onyx-aip_app_storage:/var/www/html/storage/app \
-    -v /data/backups/onyx-aip:/backup:ro \
-    php:8.3-fpm-alpine \
-    tar -xzf /backup/2026-06-29/storage_20260629_020000.tar.gz \
-        -C /var/www/html/storage --strip-components=1
-```
-
-### 5 — Restart the stack
-
-```bash
-docker compose start app queue scheduler
-```
-
-### 6 — Smoke test
-
-- Open the app in a browser and confirm the dashboard loads.
-- Check `docker compose logs app` for PHP errors.
-- Verify a recent asset record and a service job are visible.
-- Confirm `storage/app` contains the expected subdirectories (`photos/`, etc.).
+Laravel logs are bind-mounted to `/srv/docker/onyx-aip/logs` on `vm-app` (rotated daily, 14 days
+kept), so they survive deploys. The directory must be owned by uid 1000.
 
 ---
 
 ## Storage threshold alerts
 
-`storage:check-thresholds` runs daily at 08:00 and sends an email to `ALERT_EMAIL` when:
+`storage:check-thresholds` runs daily at 08:00 and emails `ALERT_EMAIL` when:
 
 - Disk usage of the filesystem hosting `storage/app` exceeds `STORAGE_ALERT_THRESHOLD_PERCENT`
   (default 80%).
 - Redis `used_memory` exceeds `REDIS_ALERT_THRESHOLD_PERCENT` (default 80%) of its `maxmemory`
-  limit (ADR-002: `noeviction` policy means writes fail if maxmemory is hit — alert before that).
+  (ADR-002: `noeviction` means writes fail if `maxmemory` is hit — alert before that).
 
-When you receive a disk alert:
-1. Log into the server.
-2. Run `df -h` to confirm remaining space.
-3. Either remove old backup dirs, compress large logs, or resize the Docker volume.
-
-When you receive a Redis alert:
-1. Check current usage: `docker compose exec redis redis-cli INFO memory | grep used_memory`.
-2. Increase `maxmemory` in `docker/redis/redis.conf` and restart the Redis container.
+On a disk alert: log in, check `df -h`, then remove old exports or resize the VM disk.
+On a Redis alert: check `docker compose exec redis redis-cli INFO memory | grep used_memory`, then
+raise `maxmemory` in `docker/redis/redis.conf` and restart Redis.
 
 ---
 
-## Restore drill checklist (run before each major release)
+## Restore drill
 
-- [ ] Locate latest backup directory and confirm both `.sql.gz` and `.tar.gz` exist.
-- [ ] Restore DB to a test MySQL instance and verify record counts.
-- [ ] Restore storage snapshot to a temp directory and spot-check file contents.
-- [ ] Record the date of last successful drill in this file.
+Run before each major release and record it here.
 
-**Last drill:** _(not yet performed — schedule before first production deploy)_
+**Last drill:** 2026-10-13 — `vm-data` backup of 2026-10-13 02:30 restored to a temporary VM in
+13 s (network disconnected). InnoDB started cleanly; `innochecksum` on all 37 `onyx_aip_prod`
+tables: 0 failures; latest writes matched the evening before the backup. Row counts not checked
+(MySQL root password not at hand). Temporary VM destroyed.

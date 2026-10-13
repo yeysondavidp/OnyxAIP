@@ -64,8 +64,11 @@ services:
       QUEUE_CONNECTION: redis
       CACHE_STORE: redis
       SESSION_DRIVER: redis
+      LOG_STACK: daily
+      LOG_DAILY_DAYS: "14"
     volumes:
       - app_storage:/var/www/html/storage/app
+      - app_logs:/var/www/html/storage/logs
     networks:
       - onyx_net
       - shared_net
@@ -84,8 +87,11 @@ services:
       CONTAINER_ROLE: queue
       REDIS_HOST: redis
       QUEUE_CONNECTION: redis
+      LOG_STACK: daily
+      LOG_DAILY_DAYS: "14"
     volumes:
       - app_storage:/var/www/html/storage/app
+      - app_logs:/var/www/html/storage/logs
     networks:
       - onyx_net
       - shared_net
@@ -93,7 +99,7 @@ services:
       - redis
 
   # ----------------------------------------------------------------
-  # scheduler — SLA clock, warranty reminders, backup job (§10, §12)
+  # scheduler — SLA clock, warranty reminders, report pruning (§10, §12)
   # ----------------------------------------------------------------
   scheduler:
     image: ghcr.io/yeysondavidp/onyx-aip-app:latest
@@ -104,6 +110,13 @@ services:
       CONTAINER_ROLE: scheduler
       REDIS_HOST: redis
       QUEUE_CONNECTION: redis
+      LOG_STACK: daily
+      LOG_DAILY_DAYS: "14"
+    # storage/app is needed here too: reports:prune deletes the real files and
+    # storage:check-thresholds measures the real disk, not the container's.
+    volumes:
+      - app_storage:/var/www/html/storage/app
+      - app_logs:/var/www/html/storage/logs
     networks:
       - onyx_net
       - shared_net
@@ -145,6 +158,15 @@ volumes:
       type: none
       o: bind
       device: ${STORAGE_PATH:-/srv/docker/onyx-aip/storage}
+  app_logs:
+    # Laravel logs — bind-mounted so an incident's log survives the deploy
+    # that fixes it. Rotated daily, 14 days kept (LOG_STACK=daily above).
+    # Host dir must exist and be owned by uid 1000 (the image's app user).
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOGS_PATH:-/srv/docker/onyx-aip/logs}
   redis_data:
     # AOF persistence — queued jobs survive a restart
 

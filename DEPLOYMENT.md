@@ -83,6 +83,16 @@ scp somefile.csv vm-app:/tmp/
 ssh vm-app "cd /opt/onyx-aip && docker compose cp /tmp/somefile.csv app:/tmp/somefile.csv"
 ```
 
+## Backups and logs
+
+Backups are taken by **Proxmox**, not by the app: a nightly snapshot of both
+VMs (`vm-data` with MySQL, `vm-app` with the containers and storage) to the
+office NAS. Procedure, manual backup and restore steps:
+`docker/docs/backup-restore.md`.
+
+Laravel logs live on the host in `/srv/docker/onyx-aip/logs` (owned by uid
+1000, rotated daily, 14 days kept), so they survive deploys.
+
 ## Agent access (MCP)
 
 AI agents (e.g. Claude Code) work through the app's MCP endpoint instead of SSH
