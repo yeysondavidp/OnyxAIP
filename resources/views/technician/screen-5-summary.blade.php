@@ -19,9 +19,10 @@
             ? $checkpoint->end_timestamp_utc->setTimezone($tz)
             : null;
 
-        $duration = ($startLocal && $endLocal)
-            ? $startLocal->diffInMinutes($endLocal).' min'
-            : null;
+        // Carbon 3 returns fractional minutes — round, and show hours for long visits.
+        $minutes  = ($startLocal && $endLocal) ? (int) round($startLocal->diffInMinutes($endLocal, true)) : null;
+        $duration = $minutes === null ? null
+            : ($minutes >= 60 ? intdiv($minutes, 60).' h '.($minutes % 60).' min' : $minutes.' min');
     @endphp
 
     <div class="tech-shell">

@@ -8,6 +8,7 @@ enum PostServiceStatus: string
     case StillFaulty    = 'still_faulty';
     case Decommissioned = 'decommissioned';
     case Replaced       = 'replaced';
+    case NoChange       = 'no_change';
 
     public function label(): string
     {
@@ -16,11 +17,15 @@ enum PostServiceStatus: string
             self::StillFaulty    => 'Still Faulty',
             self::Decommissioned => 'Decommissioned',
             self::Replaced       => 'Replaced',
+            self::NoChange       => 'No change',
         };
     }
 
-    /** Map to the AssetStatus transition applied on PM validation (US-10.4, EPIC-11). */
-    public function toAssetStatus(): AssetStatus
+    /**
+     * Map to the AssetStatus transition applied on PM validation (US-10.4, EPIC-11).
+     * Null means "leave the asset as it is" — e.g. a spare on site that was not touched.
+     */
+    public function toAssetStatus(): ?AssetStatus
     {
         return match ($this) {
             self::Active         => AssetStatus::Active,
@@ -29,6 +34,7 @@ enum PostServiceStatus: string
             // The physical unit was swapped out — this asset record is retired;
             // the replacement is registered as a separate asset.
             self::Replaced => AssetStatus::Decommissioned,
+            self::NoChange => null,
         };
     }
 }

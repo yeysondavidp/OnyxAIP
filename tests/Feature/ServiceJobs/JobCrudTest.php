@@ -425,8 +425,9 @@ it('edit form pre-fills the job description textarea', function () {
 
 it('edit form pre-fills scheduled time without seconds even though the column stores them', function () {
     $pm    = User::factory()->pm()->create();
-    $store = Store::factory()->create();
+    $store = Store::factory()->create(['store_timezone' => 'UTC']); // column is UTC; UTC store keeps this about formatting
     $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create([
+        'job_timezone'   => 'UTC',
         'scheduled_time' => '09:00:00',
     ]);
 
@@ -651,4 +652,39 @@ it('pm can force-complete an in-progress job with a reason', function () {
         ->assertRedirect();
 
     expect($job->fresh()->job_status)->toBe(JobStatus::Completed);
+});
+
+it('stores the PM-typed local schedule as UTC and shows it back in local time', function () {
+    $pm    = User::factory()->pm()->create();
+    $store = Store::factory()->create(['store_timezone' => 'Australia/Sydney']);
+
+    $this->actingAs($pm)->post(route('jobs.store'), [
+        'store_id'           => $store->id,
+        'job_reference'      => 'JOB-TZ-1',
+        'job_name'           => 'Timezone check',
+        'job_description'    => 'Visit at 4:30 PM Sydney time.',
+        'job_type'           => JobType::FaultRepair->value,
+        'early_start_window' => EarlyStartWindow::Anytime->value,
+        'scheduled_date'     => '2026-10-12',
+        'scheduled_time'     => '16:30',
+    ]);
+
+    $job = ServiceJob::where('job_reference', 'JOB-TZ-1')->sole();
+
+    expect([$job->scheduled_date->format('Y-m-d'), $job->scheduled_time, $job->scheduledAtLocal()?->format('Y-m-d H:i')])
+        ->toBe(['2026-10-12', '05:30:00', '2026-10-12 16:30']);
+});
+
+it('the one-off migration converts schedules saved as store-local time to UTC and back', function () {
+    $store = Store::factory()->create(['store_timezone' => 'Australia/Sydney']);
+    $job   = ServiceJob::factory()->forClient(Client::find($store->client_id), $store)->create([
+        'job_timezone' => 'Australia/Sydney', 'scheduled_date' => '2026-10-12', 'scheduled_time' => '16:30:00',
+    ]);
+    $migration = require database_path('migrations/2026_10_14_000001_convert_job_schedules_to_utc.php');
+
+    $migration->up();
+    $up = [$job->fresh()->scheduled_date->format('Y-m-d'), $job->fresh()->scheduled_time];
+    $migration->down();
+
+    expect([$up, $job->fresh()->scheduled_time])->toBe([['2026-10-12', '05:30:00'], '16:30:00']);
 });

@@ -64,8 +64,8 @@
                 isAssetSelected(id) { return this.selectedAssets.includes(id); },
                 isTechSelected(id) { return this.selectedTechs.includes(id); },
                 flexible: {{ old('is_flexible', $job->is_flexible ? '1' : '') ? 'true' : 'false' }},
-                scheduledDate: '{{ old('scheduled_date', $job->scheduled_date?->format('Y-m-d')) }}',
-                scheduledTime: '{{ old('scheduled_time', $job->scheduled_time ? substr($job->scheduled_time, 0, 5) : '') }}',
+                scheduledDate: '{{ old('scheduled_date', $job->scheduledAtLocal()?->format('Y-m-d') ?? $job->scheduled_date?->format('Y-m-d')) }}',
+                scheduledTime: '{{ old('scheduled_time', $job->scheduledAtLocal()?->format('H:i') ?? '') }}',
                 earlyStartWindow: '{{ old('early_start_window', $job->early_start_window->value) }}',
                 setFlexible(value) {
                     this.flexible = value;

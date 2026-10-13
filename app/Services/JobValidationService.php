@@ -73,7 +73,7 @@ class JobValidationService
                 $postStatus = PostServiceStatus::Active;
             }
 
-            $targetStatus = $postStatus->toAssetStatus();
+            $targetStatus = $postStatus->toAssetStatus() ?? $asset->asset_status;
 
             if ($targetStatus !== $asset->asset_status
                 && ! $this->assetTransitionService->isPermitted($asset->asset_status, $targetStatus)) {

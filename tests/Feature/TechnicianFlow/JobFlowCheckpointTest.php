@@ -417,3 +417,34 @@ it('cancel start reverts technician to accepted and discards before-photos', fun
     // Before-photos discarded
     expect(JobPhoto::where('job_id', $job->id)->where('type', PhotoType::Before->value)->count())->toBe(0);
 });
+
+// ── Field audit 2026-10-14 regressions ───────────────────────────────────────
+
+it('screen 1 never uses a native confirm when location is refused', function () {
+    [$job, $profile, $token] = setupJobAndProfile();
+
+    $this->get(buildSignedUrl($job, $profile, $token))
+        ->assertOk()
+        ->assertDontSee('confirm(', false)
+        ->assertSee('Start without GPS');
+});
+
+it('screen 4 only submits outcomes the technician actually chose', function () {
+    [$job, $profile, $token] = setupJobAndProfile();
+    $url                     = URL::temporarySignedRoute('technician.job.after-photos', now()->addHour(), ['job' => $job->id, 'technician_profile_id' => $profile->id, 'token' => $token]);
+
+    $this->get($url)->assertOk()->assertDontSee("o.status || 'active'", false);
+});
+
+it('screen 5 shows a whole-minute duration', function () {
+    [$job, $profile, $token] = setupJobAndProfile();
+    JobCheckpoint::create([
+        'job_id'                => $job->id,
+        'technician_profile_id' => $profile->id,
+        'start_timestamp_utc'   => '2026-10-14 09:47:00',
+        'end_timestamp_utc'     => '2026-10-14 09:49:11',
+    ]);
+    $url = URL::temporarySignedRoute('technician.job.summary', now()->addHour(), ['job' => $job->id, 'technician_profile_id' => $profile->id, 'token' => $token]);
+
+    $this->get($url)->assertOk()->assertSee('2 min')->assertDontSee('2.18');
+});
