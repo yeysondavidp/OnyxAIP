@@ -13,6 +13,10 @@
 > model (Ollama running Gemma or similar) are both first-class, swappable by config, never by
 > code change.
 
+> **Data rule (D8, 2026-10-14).** Report drafting sends text context and site photos, so it needs
+> the client's AI setting at *full content* (recorded consent). Without it, only text with codes
+> instead of names is sent, and no photos. Everything goes through the ADR-003 §6 sanitiser.
+>
 > **Exemplars (updated 2026-10-13).** A third real report — **Pandora, Westfield Miranda,
 > 12 Oct 2026** (`.claude/files/reports/Technical_Service_Report_Pandora_Miranda_12Oct2026.pdf`)
 > — changes the template assumptions for US-18.2/US-18.4:

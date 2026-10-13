@@ -58,6 +58,28 @@ storage cloud-swappable via config.
    edit the narrative by hand (US-18.6). The deterministic template renderer (US-18.2) doesn't
    know or care whether a section's text came from a model or a keyboard.
 
+6. **Data minimisation on every outbound call (decision D8, ONYX 2026-10-14).** Only what the
+   task strictly needs ever leaves ONYX. One `OutboundAiPayload` sanitiser sits in front of every
+   driver that calls an external provider, so no feature can skip it:
+   - **Images:** only the **crop** the task needs (for label reading: the label, framed by the
+     technician), **re-encoded** so all metadata is gone (EXIF/XMP/IPTC: GPS, device, timestamps,
+     owner), downscaled to the smallest size that keeps the text legible. Full site photos
+     (store interiors, windows, products, people) are **never** sent unless that client has a
+     recorded consent flag (see below).
+   - **People:** nothing that identifies a person — no faces (a crop that shows a person is not
+     sent), no technician or store-manager names, emails or phone numbers.
+   - **Text context:** codes instead of names where the task allows (asset/store codes), no street
+     addresses, no credentials or router secrets, no signed URLs or tokens, no free-text the task
+     doesn't use.
+   - **Provider account:** commercial API only (no training on our data) with **zero data
+     retention** requested; the provider is listed as a subprocessor where client contracts ask.
+   - **Per-client control:** each client has an AI setting — *off*, *label crops only* (default
+     once the client's contract has been checked and does not forbid third-party processing), or
+     *full content* (only with a recorded consent: who agreed, when, scope). A client whose
+     contract forbids any third-party processing uses the self-hosted driver only.
+   - **Audit:** each call records which data categories were sent (e.g. `label_crop`), the
+     provider and the model — never the content itself.
+
 ## Consequences
 
 **Positive**

@@ -68,12 +68,13 @@ Larastan + Pest green.
 **So that** I only check and correct, instead of typing long serials and MACs on a phone.
 
 **Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** ⏸
-Needs ADR-003 accepted and decision D8
+Needs ADR-003 accepted (D8 decided 2026-10-14: label crops only, metadata stripped — ADR-003 §6)
 
 ### Acceptance criteria
 - **Given** a label photo in the US-21.1 form, **when** the technician taps "Read label", **then**
-  the photo is sent through the ADR-003 gateway (first provider Claude Haiku 5.5, vision) and the
-  form is pre-filled with manufacturer, model, serial, MAC and any other printed identifiers, each
+  they frame **just the label** (crop step), and only that crop — re-encoded server-side with all
+  metadata removed and downscaled (ADR-003 §6) — is sent through the ADR-003 gateway (first
+  provider Claude Haiku 5.5, vision); the full photo stays in ONYX. The form is pre-filled with manufacturer, model, serial, MAC and any other printed identifiers, each
   marked **"Read from photo — please check"**.
 - **Given** the model is unsure or a field is not visible, **then** that field stays empty — the
   prompt and output schema allow "not visible", and nothing is guessed (US-18.5 guardrail: every
@@ -82,11 +83,17 @@ Needs ADR-003 accepted and decision D8
   fields came from the AI and whether the technician changed them (shown to the PM in US-21.3).
 - **Given** the AI call fails, times out (> 10 s) or declines, **then** the form stays usable for
   manual entry with a plain message; the visit never blocks on the AI.
+- **Given** the job's client has AI set to *off*, or the crop shows a person, **then** "Read label"
+  is not offered (or the crop is not sent) and the technician types the fields.
+- **Given** a call is made, **then** the audit records `label_crop` as the data category, the
+  provider and model — never the image, the prompt or the response.
 
 ### Engineering Bar checklist
-- **Secure:** the photo goes to the provider only from the server, never from the browser; no API
-  key in the client; per-job and per-link rate limit; calls audited (US-18.8); client data
-  consent recorded (D8).
+- **Secure:** only the sanitised label crop goes to the provider, only from the server, never from
+  the browser; no API key in the client; per-job and per-link rate limit; calls audited (US-18.8);
+  per-client AI setting enforced in the request **and** in the sanitiser (ADR-003 §6).
+- **Privacy:** a test proves the outbound image has no EXIF/XMP/IPTC (including GPS) and is a
+  crop, not the original; no names, emails, phones, addresses or tokens in the outbound text.
 - **Clean:** one `LabelReader` behind the ADR-003 contract with a structured output schema;
   provider/model in config only.
 - **UX:** pre-filled fields visibly different until confirmed; one tap to accept all.
