@@ -12,6 +12,7 @@
 
         <div style="margin-bottom: var(--space-5);">
             <x-onyx.button href="{{ route('email-templates.index') }}" variant="outline" size="sm">Email templates</x-onyx.button>
+            <x-onyx.button href="{{ route('agents.index') }}" variant="outline" size="sm">Agent access</x-onyx.button>
         </div>
 
         <x-onyx.card variant="default" padding="xl">

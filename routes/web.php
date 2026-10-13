@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgentAccessController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetQrController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -178,6 +179,14 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::get('/settings/email-templates/{slot}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
     Route::patch('/settings/email-templates/{slot}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
     Route::get('/settings/email-templates/{slot}/preview', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+
+    // Agent access — service accounts + Sanctum tokens for MCP (US-20.1, ADR-004)
+    Route::get('/settings/agents', [AgentAccessController::class, 'index'])->name('agents.index');
+    Route::get('/settings/agents/create', [AgentAccessController::class, 'create'])->name('agents.create');
+    Route::post('/settings/agents', [AgentAccessController::class, 'store'])->name('agents.store');
+    Route::get('/settings/agents/{agent}/tokens/create', [AgentAccessController::class, 'createToken'])->name('agents.tokens.create');
+    Route::post('/settings/agents/{agent}/tokens', [AgentAccessController::class, 'storeToken'])->name('agents.tokens.store');
+    Route::delete('/settings/agents/{agent}/tokens/{token}', [AgentAccessController::class, 'destroyToken'])->name('agents.tokens.destroy');
 });
 
 /*

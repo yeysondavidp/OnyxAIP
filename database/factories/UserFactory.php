@@ -58,4 +58,11 @@ class UserFactory extends Factory
             'role' => UserRole::ClientUser,
         ]);
     }
+
+    public function agent(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Agent,
+        ]);
+    }
 }

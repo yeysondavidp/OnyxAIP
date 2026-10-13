@@ -12,9 +12,10 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
- * @property int|null $client_id Null for PM (sees all clients); set for client_user (v2).
+ * @property int|null $client_id Null for PM (sees all clients); set for client_user (v2) and client-scoped agents.
  * @property UserRole $role
  */
 #[Fillable(['name', 'email', 'password', 'client_id', 'role'])]
@@ -22,7 +23,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable implements CanResetPasswordContract
 {
     /** @use HasFactory<UserFactory> */
-    use Auditable, CanResetPassword, HasFactory, Notifiable;
+    use Auditable, CanResetPassword, HasApiTokens, HasFactory, Notifiable;
 
     protected function casts(): array
     {
@@ -50,16 +51,21 @@ class User extends Authenticatable implements CanResetPasswordContract
         return $this->role === UserRole::ClientUser;
     }
 
+    public function isAgent(): bool
+    {
+        return $this->role === UserRole::Agent;
+    }
+
     // ── Tenant scope ──────────────────────────────────────────────────────────
 
     /**
      * Returns the client IDs this user is permitted to see.
      * null  → unrestricted (PM, sees all clients).
-     * array → restricted to those IDs (client_user in v2).
+     * array → restricted to those IDs (client_user in v2, client-scoped agent).
      */
     public function permittedClientIds(): ?array
     {
-        if ($this->role === UserRole::ClientUser && $this->client_id !== null) {
+        if (in_array($this->role, [UserRole::ClientUser, UserRole::Agent], true) && $this->client_id !== null) {
             return [(int) $this->client_id];
         }
 

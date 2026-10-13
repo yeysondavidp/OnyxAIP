@@ -1,8 +1,8 @@
 # ADR-004 — Agent access: an authenticated MCP endpoint instead of SSH + tinker
 
-- **Status:** Proposed
+- **Status:** Accepted (ONYX, 2026-10-13)
 - **Date:** 2026-10-13
-- **Deciders:** ONYX Visual (engineering) — pending review
+- **Deciders:** ONYX Visual (engineering)
 - **Context source:** Recording the Pandora Miranda visit (12 Oct 2026, JOB-2026-004) on
   2026-10-13 required an AI agent (Claude Code) to SSH into the production VM and run a tinker
   script. Feeds EPIC-20. Related: §14.3 (security, rate limiting), §14.5 (audit), ADR-002
