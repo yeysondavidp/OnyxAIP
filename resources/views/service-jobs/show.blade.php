@@ -389,9 +389,7 @@
                     @if ($job->scheduled_date)
                         <div style="display: flex; flex-direction: column; gap: var(--space-1);">
                             <dt style="color: var(--text-secondary);">Scheduled</dt>
-                            <dd>{{ $job->scheduled_date->format('d M Y') }}
-                                @if ($job->scheduled_time) at {{ substr((string)$job->scheduled_time, 0, 5) }} @endif
-                            </dd>
+                            <dd>@if ($job->scheduledAtLocal()){{ $job->scheduledAtLocal()->format('d M Y \a\t g:i A') }}@else{{ $job->scheduled_date->format('d M Y') }}@endif</dd>
                         </div>
                     @endif
                     <div style="display: flex; flex-direction: column; gap: var(--space-1);">

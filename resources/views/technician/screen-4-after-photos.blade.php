@@ -105,9 +105,11 @@
                 if (this.gpsLat !== null) fd.append('gps_lat', this.gpsLat);
                 if (this.gpsLng !== null) fd.append('gps_lng', this.gpsLng);
                 if (this.completionNotes) fd.append('completion_notes', this.completionNotes);
-                this.outcomes.forEach((o, i) => {
+                // Only outcomes the technician actually chose — an unchosen asset is left
+                // for the PM to decide at validation, never silently reported as resolved.
+                this.outcomes.filter((o) => o.status).forEach((o, i) => {
                     fd.append('outcomes[' + i + '][asset_id]', o.asset_id);
-                    fd.append('outcomes[' + i + '][status]', o.status || 'active');
+                    fd.append('outcomes[' + i + '][status]', o.status);
                     if (o.notes) fd.append('outcomes[' + i + '][notes]', o.notes);
                 });
                 // Use form submit to preserve signed URL redirect chain

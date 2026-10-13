@@ -167,6 +167,17 @@ class ServiceJob extends BaseModel
      *
      * @throws \InvalidArgumentException when the transition is not permitted
      */
+    /** The scheduled start in the store's timezone (stored as UTC, SRA §5.1), or null if unscheduled. */
+    public function scheduledAtLocal(): ?Carbon
+    {
+        if (! $this->scheduled_date || ! $this->scheduled_time) {
+            return null;
+        }
+
+        return Carbon::parse($this->scheduled_date->format('Y-m-d').' '.$this->scheduled_time, 'UTC')
+            ->setTimezone($this->job_timezone);
+    }
+
     public function transitionTo(JobStatus $newStatus, ?User $actor = null, ?string $reason = null): void
     {
         app(JobTransitionService::class)->transitionTo($this, $newStatus, $actor, $reason);

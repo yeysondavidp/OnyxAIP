@@ -218,3 +218,13 @@ it('service_history record cannot be deleted', function () {
     expect($result)->toBeFalsy();
     expect(ServiceHistory::find($history->id))->not->toBeNull();
 });
+
+it('a "no change" outcome leaves an untouched spare as it was', function () {
+    [$job, $asset] = makeCompletedJobWithAsset('offline');
+    $asset->forceFill(['asset_status' => AssetStatus::Offline->value])->save();
+
+    app(JobValidationService::class)->validate($job, User::factory()->pm()->create(), [$asset->id => PostServiceStatus::NoChange->value]);
+
+    expect([$asset->fresh()->asset_status, ServiceHistory::where('asset_id', $asset->id)->sole()->status_after])
+        ->toBe([AssetStatus::Offline, AssetStatus::Offline]);
+});

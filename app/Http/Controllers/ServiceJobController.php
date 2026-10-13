@@ -25,6 +25,7 @@ use App\Services\JobValidationService;
 use App\Services\Sla\SlaClockService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -89,7 +90,7 @@ class ServiceJobController extends Controller
                 'client_id'       => $client->id,
                 'store_id'        => $store->id,
                 'job_timezone'    => $store->store_timezone,
-                ...$this->scheduleFields($validated),
+                ...$this->scheduleFields($validated, $store->store_timezone),
                 'job_status'    => JobStatus::Draft->value,
                 'parent_job_id' => $parentJobId,
                 'job_level'     => $jobLevel,
@@ -170,7 +171,7 @@ class ServiceJobController extends Controller
                 'job_name'        => $validated['job_name'],
                 'job_description' => $validated['job_description'],
                 'job_type'        => $validated['job_type'],
-                ...$this->scheduleFields($validated),
+                ...$this->scheduleFields($validated, $job->job_timezone),
                 'client_email' => $validated['client_email'] ?? null,
                 'client_name'  => $validated['client_name']  ?? null,
             ]);
@@ -387,14 +388,24 @@ class ServiceJobController extends Controller
      * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
-    private function scheduleFields(array $validated): array
+    private function scheduleFields(array $validated, string $timezone): array
     {
         $isFlexible = $validated['is_flexible'] ?? false;
+        $date       = $isFlexible ? null : ($validated['scheduled_date'] ?? null);
+        $time       = $isFlexible ? null : ($validated['scheduled_time'] ?? null);
+
+        // The PM types the store's local time; the column is UTC (SRA §5.1) and every
+        // reader converts back with the job timezone — so convert on the way in.
+        if ($date !== null && $time !== null) {
+            $utc  = Carbon::parse("{$date} {$time}", $timezone)->utc();
+            $date = $utc->format('Y-m-d');
+            $time = $utc->format('H:i:s');
+        }
 
         return [
             'is_flexible'        => $isFlexible,
-            'scheduled_date'     => $isFlexible ? null : ($validated['scheduled_date'] ?? null),
-            'scheduled_time'     => $isFlexible ? null : ($validated['scheduled_time'] ?? null),
+            'scheduled_date'     => $date,
+            'scheduled_time'     => $time,
             'early_start_window' => $isFlexible
                 ? EarlyStartWindow::Anytime->value
                 : ($validated['early_start_window'] ?? EarlyStartWindow::Anytime->value),

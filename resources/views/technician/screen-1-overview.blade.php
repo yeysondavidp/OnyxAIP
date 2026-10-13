@@ -48,6 +48,7 @@
     <div class="tech-shell"
         x-data="{
             canStart: {{ $earliestUtc ? 'new Date() >= new Date(\''.$earliestUtc.'\')' : 'true' }},
+            gpsDenied: false,
             earliestLocal: '{{ $startLocal && $windowMins ? $startLocal->copy()->subMinutes($windowMins)->format('g:i A') : '' }}',
             checkWindow() {
                 @if ($earliestUtc)
@@ -185,7 +186,16 @@
 
         {{-- Sticky Start CTA --}}
         <div class="tech-sticky-bar">
-            <form method="POST" action="{{ $startUrl }}"
+            {{-- Location refused: explain inline, never a native dialog (blocks the page on mobile). --}}
+            <div x-show="gpsDenied" x-cloak role="alert"
+                style="background: rgba(234,179,8,.1); border: 1px solid rgba(234,179,8,.3); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); font-size: var(--fs-13); color: #854d0e;">
+                We couldn't get your location. You can still start — the job will be recorded without GPS.
+                <button type="button" class="tech-start-btn" style="margin-top: var(--space-3);"
+                    @click="$refs.startForm.querySelector('[name=gps_status]').value = 'denied'; $refs.startForm.submit();">
+                    Start without GPS
+                </button>
+            </div>
+            <form method="POST" action="{{ $startUrl }}" x-ref="startForm" x-show="! gpsDenied"
                 @submit.prevent="
                     if (!canStart) return;
                     const form = $el;
@@ -197,12 +207,7 @@
                                 form.querySelector('[name=gps_status]').value = 'granted';
                                 form.submit();
                             },
-                            () => {
-                                if (confirm('Location access was denied. Proceed without GPS?')) {
-                                    form.querySelector('[name=gps_status]').value = 'denied';
-                                    form.submit();
-                                }
-                            },
+                            () => { gpsDenied = true; },
                             { timeout: 10000 }
                           )
                         : (() => {
