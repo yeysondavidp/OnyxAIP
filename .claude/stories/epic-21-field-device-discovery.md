@@ -83,8 +83,9 @@ Needs ADR-003 accepted (D8 decided 2026-10-14: label crops only, metadata stripp
   fields came from the AI and whether the technician changed them (shown to the PM in US-21.3).
 - **Given** the AI call fails, times out (> 10 s) or declines, **then** the form stays usable for
   manual entry with a plain message; the visit never blocks on the AI.
-- **Given** the job's client has AI set to *off*, or the crop shows a person, **then** "Read label"
-  is not offered (or the crop is not sent) and the technician types the fields.
+- **Given** the job's client has AI set to *off*, the device is a router/modem/network device
+  (its label prints passwords), or the crop shows a person, **then** "Read label" is not offered
+  (or the crop is not sent) and the technician types the fields.
 - **Given** a call is made, **then** the audit records `label_crop` as the data category, the
   provider and model — never the image, the prompt or the response.
 

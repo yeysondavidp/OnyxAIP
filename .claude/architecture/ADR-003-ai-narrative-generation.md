@@ -61,11 +61,21 @@ storage cloud-swappable via config.
 6. **Data minimisation on every outbound call (decision D8, ONYX 2026-10-14).** Only what the
    task strictly needs ever leaves ONYX. One `OutboundAiPayload` sanitiser sits in front of every
    driver that calls an external provider, so no feature can skip it:
-   - **Images:** only the **crop** the task needs (for label reading: the label, framed by the
-     technician), **re-encoded** so all metadata is gone (EXIF/XMP/IPTC: GPS, device, timestamps,
-     owner), downscaled to the smallest size that keeps the text legible. Full site photos
-     (store interiors, windows, products, people) are **never** sent unless that client has a
-     recorded consent flag (see below).
+   - **Images:** only the photos or **crops** the task needs, **re-encoded** so all metadata is
+     gone (EXIF/XMP/IPTC: GPS, device, timestamps, owner), downscaled to the smallest size that
+     keeps them legible.
+   - **What counts as confidential in a store** (client agreements cover trade secrets and
+     confidential information; public-facing areas are not confidential — ONYX lead, 2026-10-14).
+     A photo may be sent only if it shows **public areas** (shopfront, windows, sales floor as a
+     customer sees it). Never sent:
+     - **back-of-house** — stockrooms, comms/rack cupboards, offices, staff areas;
+     - **non-public content** — unreleased campaign artwork, screens showing anything other than
+       what customers see (POS, back-office, CMS, schedules), documents, price lists or plans not
+       on display;
+     - **credentials** — router/modem/network labels (they print Wi-Fi and admin passwords), so
+       network devices are always entered by hand;
+     - **people** — staff or customers (no faces; a photo or crop with a person is not sent);
+     - **customer data** of any kind.
    - **People:** nothing that identifies a person — no faces (a crop that shows a person is not
      sent), no technician or store-manager names, emails or phone numbers.
    - **Text context:** codes instead of names where the task allows (asset/store codes), no street
@@ -73,10 +83,14 @@ storage cloud-swappable via config.
      doesn't use.
    - **Provider account:** commercial API only (no training on our data) with **zero data
      retention** requested; the provider is listed as a subprocessor where client contracts ask.
-   - **Per-client control:** each client has an AI setting — *off*, *label crops only* (default
-     once the client's contract has been checked and does not forbid third-party processing), or
-     *full content* (only with a recorded consent: who agreed, when, scope). A client whose
-     contract forbids any third-party processing uses the self-hosted driver only.
+   - **Per-client control:** each client has an AI setting — *off*, *label crops only*, or
+     *public-area photos* (label crops plus public-area photos for reports). Pandora, Dior and
+     Sephora agreements were checked on 2026-10-14: no restriction beyond trade secrets and
+     confidential information, so *public-area photos* is allowed for them. A future client whose
+     contract forbids third-party processing uses the self-hosted driver only.
+   - **A human decides what is public.** Before a photo is used by an AI feature, the PM (or the
+     technician on site) confirms it shows only public areas and none of the never-sent items;
+     unconfirmed photos are not sent.
    - **Audit:** each call records which data categories were sent (e.g. `label_crop`), the
      provider and the model — never the content itself.
 
