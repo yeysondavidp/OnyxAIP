@@ -7,6 +7,7 @@ use App\Enums\PhotoType;
 use App\Enums\PostServiceStatus;
 use App\Enums\TechnicianJobStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterFoundDeviceRequest;
 use App\Models\Asset;
 use App\Models\JobAssetOutcome;
 use App\Models\JobAttachment;
@@ -15,6 +16,8 @@ use App\Models\JobPhoto;
 use App\Models\ServiceJob;
 use App\Models\Store;
 use App\Models\TechnicianProfile;
+use App\Services\FoundDeviceService;
+use App\Services\JobAssetService;
 use App\Services\JobFlowService;
 use App\Services\TechnicianUrlService;
 use Carbon\Carbon;
@@ -197,6 +200,54 @@ class JobFlowController extends Controller
         }
 
         return response()->json(['success' => true, 'new_status' => $newStatus->value, 'label' => $newStatus->label()]);
+    }
+
+    // ── Devices found on site (Screen 3, US-21.1) ─────────────────────────────
+
+    /** Register a device the technician is looking at, pending PM verification. */
+    public function storeFoundDevice(RegisterFoundDeviceRequest $request, string $job, FoundDeviceService $devices): RedirectResponse
+    {
+        $result = $this->resolveIdentity($request, $job);
+        if ($this->isExpiredRedirect($result)) {
+            return $result;
+        }
+
+        [$jobModel, $profile] = $result;
+        $validated            = $request->validated();
+        $briefUrl             = app(TechnicianUrlService::class)->resignFromRequest($request, 'technician.job.brief', ['job' => $jobModel->id]);
+
+        $duplicate = $devices->possibleDuplicate($jobModel->client_id, $validated['serial_number'] ?? null, $validated['mac_address'] ?? null);
+
+        if ($duplicate !== null && ! $request->boolean('confirm_new')) {
+            return redirect()->to($briefUrl.'#found-devices')->withInput($request->except('photo'))->with('possible_duplicate', [
+                'id'         => $duplicate->id,
+                'asset_code' => $duplicate->asset_code,
+                'store_name' => $duplicate->store?->store_name,
+                'same_store' => $duplicate->store_id === $jobModel->store_id && $duplicate->asset_status !== AssetStatus::PendingVerification,
+            ]);
+        }
+
+        $asset = $devices->register($jobModel, $profile, $validated, $request->file('photo'));
+
+        return redirect()->to($briefUrl.'#found-devices')
+            ->with('found_device_added', "Saved as {$asset->asset_code}. A project manager will check it.");
+    }
+
+    /** The "found" device is one already registered at this store: add it to the job instead. */
+    public function linkExistingDevice(Request $request, string $job, string $asset, JobAssetService $jobAssets): RedirectResponse
+    {
+        $result = $this->resolveIdentity($request, $job);
+        if ($this->isExpiredRedirect($result)) {
+            return $result;
+        }
+
+        [$jobModel] = $result;
+        $existing   = Asset::where('store_id', $jobModel->store_id)->findOrFail((int) $asset);
+
+        $jobAssets->attach($jobModel, [$existing->id]);
+
+        return redirect()->to(app(TechnicianUrlService::class)->resignFromRequest($request, 'technician.job.brief', ['job' => $jobModel->id]).'#found-devices')
+            ->with('found_device_added', "{$existing->asset_code} is now part of this visit.");
     }
 
     // ── PM attachment view (Screens 1 & 3) ─────────────────────────────────────

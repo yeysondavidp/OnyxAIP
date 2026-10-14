@@ -45,7 +45,7 @@ class CreateAssetRequest extends FormRequest
             'purchase_date'   => ['nullable', 'date'],
             'warranty_expiry' => ['nullable', 'date'],
             'install_date'    => ['nullable', 'date'],
-            'asset_status'    => ['required', Rule::enum(AssetStatus::class)],
+            'asset_status'    => ['required', Rule::enum(AssetStatus::class)->except(AssetStatus::PendingVerification)],
             'location_notes'  => ['nullable', 'string', 'max:500'],
             'parent_asset_id' => ['nullable', 'integer', Rule::exists('assets', 'id')->where('client_id', $clientId)],
             'notes'           => ['nullable', 'string', 'max:5000'],

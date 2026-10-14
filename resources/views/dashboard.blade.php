@@ -10,6 +10,17 @@
         </p>
     </div>
 
+    {{-- Devices technicians found on site, waiting for a PM (US-21.3) --}}
+    @php $devicesToVerify = \App\Models\Asset::pendingDevices()->count(); @endphp
+    @if ($devicesToVerify > 0)
+        <div style="margin-bottom: var(--space-6);">
+            <x-onyx.alert tone="info" title="{{ $devicesToVerify }} {{ Str::plural('device', $devicesToVerify) }} to verify">
+                Technicians added {{ $devicesToVerify === 1 ? 'a device' : 'devices' }} they found on site. {{ $devicesToVerify === 1 ? 'It stays' : 'They stay' }} out of the register until you check {{ $devicesToVerify === 1 ? 'it' : 'them' }}.
+                <a href="{{ route('found-devices.index') }}" style="color: var(--bronze-600); font-weight: var(--weight-medium);">Review now</a>
+            </x-onyx.alert>
+        </div>
+    @endif
+
     {{-- Stat cards --}}
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-8);">
 

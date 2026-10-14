@@ -63,7 +63,7 @@ class SearchAssets extends AgentTool
             'query'        => $schema->string()->description('Part of the asset code, serial number, name or MAC address.'),
             'store_code'   => $schema->string()->description('Limit to one store, e.g. "PAN-MIR-001".'),
             'asset_type'   => $schema->string()->enum(array_column(AssetType::cases(), 'value')),
-            'asset_status' => $schema->string()->enum(array_column(AssetStatus::cases(), 'value')),
+            'asset_status' => $schema->string()->enum(array_column(AssetStatus::selectable(), 'value')),
         ];
     }
 }

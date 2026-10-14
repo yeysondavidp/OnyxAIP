@@ -132,6 +132,6 @@ trait AcceptsAssetFields
     /** @return list<string> */
     private static function assetStatusValues(): array
     {
-        return array_column(AssetStatus::cases(), 'value');
+        return array_column(AssetStatus::selectable(), 'value');
     }
 }

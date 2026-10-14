@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Ai\AiManager;
 use App\Contracts\PublicHolidayProvider;
+use App\Models\Asset;
 use App\Models\PersonalAccessToken;
 use App\Services\Sla\StaticAuPublicHolidayProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
@@ -45,6 +47,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Agent tokens record the PM who issued them (US-20.1).
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+
+        // {device} = a device found on site awaiting verification; invisible to normal asset
+        // binding by design (VerifiedAssetScope), and still client-scoped (US-21.3).
+        Route::bind('device', fn (string $id) => Asset::pendingDevices()->findOrFail((int) $id));
 
         $this->configureRateLimiters();
     }

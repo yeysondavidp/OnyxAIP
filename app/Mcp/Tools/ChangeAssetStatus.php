@@ -28,7 +28,7 @@ class ChangeAssetStatus extends AgentTool
 
         $input = $request->validate([
             'asset_code' => ['required', 'string', 'max:40'],
-            'status'     => ['required', Rule::enum(AssetStatus::class)],
+            'status'     => ['required', Rule::enum(AssetStatus::class)->except(AssetStatus::PendingVerification)],
             'reason'     => ['required', 'string', 'max:500'],
         ], [
             'reason.required' => 'Say why the status is changing, e.g. "Seen faulty on site visit 12 Oct 2026".',
@@ -65,7 +65,7 @@ class ChangeAssetStatus extends AgentTool
     {
         return [
             'asset_code' => $schema->string()->required(),
-            'status'     => $schema->string()->enum(array_column(AssetStatus::cases(), 'value'))->required(),
+            'status'     => $schema->string()->enum(array_column(AssetStatus::selectable(), 'value'))->required(),
             'reason'     => $schema->string()->description('Why, in plain words. Recorded in the asset history.')->required(),
             'dry_run'    => $schema->boolean()->description('true = check the transition without saving.'),
         ];

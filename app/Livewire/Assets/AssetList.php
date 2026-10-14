@@ -96,7 +96,7 @@ class AssetList extends Component
             'clients'  => Client::orderBy('client_name')->get(['id', 'client_name']),
             'stores'   => $this->filteredStores(),
             'types'    => AssetType::cases(),
-            'statuses' => AssetStatus::cases(),
+            'statuses' => AssetStatus::selectable(),
         ]);
     }
 }
