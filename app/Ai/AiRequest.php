@@ -23,6 +23,8 @@ final readonly class AiRequest
         public array $images = [],
         public ?array $jsonSchema = null,
         public int $maxTokens = 2048,
+        // Provider effort for this request (low|medium|high); null = the configured default.
+        public ?string $effort = null,
     ) {
         if ($category === AiDataCategory::Text && $images !== []) {
             throw new \InvalidArgumentException('A text request cannot carry images.');

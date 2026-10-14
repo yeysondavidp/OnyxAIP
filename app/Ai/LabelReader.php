@@ -54,21 +54,37 @@ class LabelReader
      */
     public function read(Client $client, SanitisedImage $closeUp): array
     {
-        $reply = $this->gateway->complete(new AiRequest(
+        // Two independent reads; keep only the fields both agree on. A random misread (a dropped
+        // digit on rotated text) rarely repeats identically — disagreement becomes "not read".
+        $first  = self::clean($this->readOnce($client, $closeUp));
+        $second = self::clean($this->readOnce($client, $closeUp));
+        $fields = array_filter($first, fn (string $value, string $field) => isset($second[$field]) && strcasecmp($second[$field], $value) === 0, ARRAY_FILTER_USE_BOTH);
+        $token  = Str::random(40);
+        Cache::put('label-read:'.$token, $fields, now()->addHour());
+
+        return ['fields' => $fields, 'token' => $token];
+    }
+
+    /**
+     * @return array<string, mixed>
+     *
+     * @throws AiUnavailableException
+     */
+    private function readOnce(Client $client, SanitisedImage $closeUp): array
+    {
+        return $this->gateway->complete(new AiRequest(
             client: $client,
             category: AiDataCategory::LabelCrop,
             system: self::SYSTEM,
             prompt: 'Read this device label.',
             images: [$closeUp],
             jsonSchema: self::SCHEMA,
-            maxTokens: 2048,
+            maxTokens: 4096,
+            // Measured on real labels (2026-10-14): low effort misread 3 of 15 values, medium
+            // turned the doubtful ones into "not read" — a missed field is safe, a wrong one isn't.
+            effort: 'medium',
         ))->json();
 
-        $fields = self::clean($reply);
-        $token  = Str::random(40);
-        Cache::put('label-read:'.$token, $fields, now()->addHour());
-
-        return ['fields' => $fields, 'token' => $token];
     }
 
     /**
@@ -106,8 +122,10 @@ class LabelReader
             $value = is_string($reply[$field] ?? null) ? trim($reply[$field]) : '';
 
             $value = match ($field) {
-                'mac_address'   => self::normaliseMac($value),
-                'serial_number' => preg_match('/^[A-Za-z0-9][A-Za-z0-9\-\/.]{2,99}$/', $value)                      === 1 ? $value : '',
+                'mac_address' => self::normaliseMac($value),
+                // I/l/O/o among a serial's digits is the signature of an OCR slip (1/I/l, 0/O),
+                // as is mixed case — drop it rather than suggest a wrong value.
+                'serial_number' => self::looksLikeSerial($value) ? $value : '',
                 default         => mb_strlen($value) <= 100 && preg_match('/^[\pL\pN][\pL\pN\s\-\/.+]*$/u', $value) === 1 ? $value : '',
             };
 
@@ -117,6 +135,14 @@ class LabelReader
         }
 
         return $fields;
+    }
+
+    private static function looksLikeSerial(string $value): bool
+    {
+        $mixedCase      = preg_match('/[a-z]/', $value)      === 1 && preg_match('/[A-Z]/', $value) === 1;
+        $ambiguousAfter = preg_match('/\d.*[IlOo]/', $value) === 1;
+
+        return ! $mixedCase && ! $ambiguousAfter && preg_match('/^[A-Za-z0-9][A-Za-z0-9\-\/.]{2,99}$/', $value) === 1;
     }
 
     private static function normaliseMac(string $value): string

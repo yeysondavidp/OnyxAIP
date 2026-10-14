@@ -67,8 +67,8 @@ Larastan + Pest green.
 **I want** to photograph a device's label and have the fields filled in for me
 **So that** I only check and correct, instead of typing long serials and MACs on a phone.
 
-**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** 🚧
-Code done; switch on for technicians only after `ai:label-accuracy` on the Miranda label crops
+**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** ✅
+Done. Accuracy 2026-10-14 (Claude Haiku 5.5, 6 Miranda label crops × 3 runs): 0 wrong values; serials not read on ambiguous labels (safe). Medium effort + two-read agreement; ~6–7 s per label
 
 ### Acceptance criteria
 - **Given** a label photo in the US-21.1 form, **when** the technician taps "Read label", **then**

@@ -13,8 +13,9 @@ final class FakeAiClient implements AiClient
     /** @var list<AiRequest> */
     public array $requests = [];
 
+    /** @param string|list<string> $reply one reply, or a sequence returned call by call */
     public function __construct(
-        private readonly string $reply = '{}',
+        private readonly string|array $reply = '{}',
         private readonly bool $fail = false,
     ) {}
 
@@ -26,6 +27,8 @@ final class FakeAiClient implements AiClient
             throw AiUnavailableException::providerFailed();
         }
 
-        return new AiResponse($this->reply, 'fake', 'fake-model', 0, 0);
+        $reply = is_array($this->reply) ? $this->reply[(count($this->requests) - 1) % count($this->reply)] : $this->reply;
+
+        return new AiResponse($reply, 'fake', 'fake-model', 0, 0);
     }
 }

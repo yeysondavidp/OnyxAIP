@@ -25,7 +25,7 @@ use Illuminate\Testing\TestResponse;
 uses(RefreshDatabase::class);
 
 /** @return array{0: ServiceJob, 1: TechnicianProfile, 2: string, 3: FakeAiClient} */
-function labelJob(AiMode $mode = AiMode::LabelCrops, string $reply = '{"manufacturer":"Beat","model":"MIB Media Player Model 19","serial_number":"MIB192600317","mac_address":"00ce39d82a51"}'): array
+function labelJob(AiMode $mode = AiMode::LabelCrops, string|array $reply = '{"manufacturer":"Beat","model":"MIB Media Player Model 19","serial_number":"MIB192600317","mac_address":"00ce39d82a51"}'): array
 {
     Mail::fake();
     Storage::fake('local');
@@ -66,6 +66,35 @@ it('drops values that do not look like the field instead of suggesting them', fu
     [$job, $profile, $token] = labelJob(reply: '{"manufacturer":"Beat","model":null,"serial_number":"see sticker!!","mac_address":"00:CE:39"}');
 
     readLabel($job, $profile, $token)->assertOk()->assertJsonPath('fields', ['manufacturer' => 'Beat']);
+});
+
+it('drops a serial with mixed case, the mark of an l/1 or O/0 misread', function () {
+    [$job, $profile, $token] = labelJob(reply: '{"manufacturer":"Beat","model":null,"serial_number":"MIB19260031l","mac_address":null}');
+
+    readLabel($job, $profile, $token)->assertOk()->assertJsonPath('fields', ['manufacturer' => 'Beat']);
+});
+
+it('drops a serial with I or O among its digits, easily confused with 1 and 0', function () {
+    [$job, $profile, $token] = labelJob(reply: '{"manufacturer":"Beat","model":null,"serial_number":"MIB19260031I","mac_address":null}');
+
+    readLabel($job, $profile, $token)->assertOk()->assertJsonPath('fields', ['manufacturer' => 'Beat']);
+});
+
+it('keeps only the fields two independent reads agree on', function () {
+    [$job, $profile, $token] = labelJob(reply: [
+        '{"manufacturer":"Beat","model":"MIB 19","serial_number":"MIB192600311","mac_address":"00:CE:39:D8:2A:4B"}',
+        '{"manufacturer":"Beat","model":"MIB 19","serial_number":"MIB19260311","mac_address":"00:CE:39:D8:2A:4B"}',
+    ]);
+
+    readLabel($job, $profile, $token)->assertOk()->assertJsonPath('fields', ['manufacturer' => 'Beat', 'model' => 'MIB 19', 'mac_address' => '00:CE:39:D8:2A:4B']);
+});
+
+it('asks the provider for medium effort, measured on real labels', function () {
+    [$job, $profile, $token, $fake] = labelJob();
+
+    readLabel($job, $profile, $token);
+
+    expect($fake->requests[0]->effort)->toBe('medium');
 });
 
 it('sends only a sanitised label crop, audited as label_crop', function () {

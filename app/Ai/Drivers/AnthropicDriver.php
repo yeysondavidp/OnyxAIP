@@ -32,7 +32,7 @@ final class AnthropicDriver implements AiClient
         }
         $content[] = TextBlockParam::with(text: $request->prompt);
 
-        $outputConfig = ['effort' => $this->effort];
+        $outputConfig = ['effort' => $request->effort ?? $this->effort];
         if ($request->jsonSchema !== null) {
             $outputConfig['format'] = ['type' => 'json_schema', 'schema' => $request->jsonSchema];
         }
