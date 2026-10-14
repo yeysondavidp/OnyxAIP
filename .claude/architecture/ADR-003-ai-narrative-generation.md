@@ -1,8 +1,8 @@
 # ADR-003 — AI-assisted narrative generation: provider-agnostic gateway
 
-- **Status:** Proposed
+- **Status:** Accepted (ONYX, 2026-10-14)
 - **Date:** 2026-07-24
-- **Deciders:** ONYX Visual (engineering) — pending review
+- **Deciders:** ONYX Visual (engineering)
 - **Context source:** Two real ONYX deliverables reviewed this session — `Technical Service
   Report — Pandora, Pitt Street Mall (30 Jun 2026)` and the raw technician notes for `Dior,
   Boutique Pacific Fair (15 Jul 2026)`, both in `.claude/files/`. Feeds EPIC-18. Related: §2.3

@@ -24,7 +24,7 @@ velocity will calibrate after Sprint 0–1.
 | **12** | Agent access + close Miranda | EPIC-20, US-19.8, US-19.1 | Agents work through an authenticated, audited MCP endpoint instead of SSH (ADR-004); offline visits can be closed honestly; screens show their content spec. |
 | **13** | Field findings (Miranda) | EPIC-19 (rest) | Content faults, owned follow-ups, player swaps, audio-role flag, captioned photos — what the 12 Oct 2026 visit could not record. |
 | **14** | Polish & trust | EPIC-17, US-03.6, US-12.4 | Audit viewer, store document library, NZ public holidays. |
-| **15** | AI-assisted service reports | EPIC-18 | *(Post-v1, needs ADR-003 accepted)* The per-visit Technical Service Report drafts itself from validated job data; PM reviews/edits before finalising. Provider-agnostic (ADR-003). Uses EPIC-19 captions and follow-ups. |
+| **15** | AI-assisted service reports | EPIC-18 | *(Post-v1; ADR-003 accepted 2026-10-14)* The per-visit Technical Service Report drafts itself from validated job data; PM reviews/edits before finalising. Provider-agnostic (ADR-003). Uses EPIC-19 captions and follow-ups. |
 | **16** | Field device discovery | EPIC-21 | Technicians register unknown devices on first visits; label photos pre-fill the fields (Haiku 5.5), technician confirms, PM verifies. |
 
 ## Status review — 2026-10-13
@@ -136,7 +136,7 @@ public holidays — detail the story first, it is still `🧊`).
 
 ## Sprint 15 — AI-assisted service reports
 
-EPIC-18 once ADR-003 is accepted (D3). The Miranda report is the third exemplar and changes the
+EPIC-18 (ADR-003 accepted 2026-10-14, D3). The Miranda report is the third exemplar and changes the
 template: see the "Exemplars" note at the top of `stories/epic-18-service-report-generation.md`.
 
 ## Field audit of the technician flow — 2026-10-14
@@ -160,7 +160,7 @@ flow duplicates the work of the hand-written report — is what EPIC-18, US-19.8
 |---|----------|--------|----------------|
 | D1 | Add a **Spare / Not in service** asset status to the §4.5 lifecycle, or only register a replacement at swap time? | US-19.4, H4 step 2 | Add `Spare` (in store, not deployed): it is what Miranda actually looked like |
 | D2 | Asset status for "content action required": stays **Active** or goes **Faulty**? | US-19.2 | Active (hardware works) + open follow-up, so hardware fault counts stay honest |
-| D3 | Accept ADR-003 (AI provider gateway) and which provider to start with | EPIC-18 | Accept; start with a paid model, keep Ollama as the swap path |
+| D3 | ~~Accept ADR-003~~ ✅ Accepted 2026-10-14 | EPIC-18, EPIC-21 | First provider Claude Haiku 5.5; self-hosted Ollama remains the swap path |
 | D4 | Should the SLA clock start at the fault's reported date or at job creation? | US-19.7 | Keep job creation (no SLA change); show the reported date for context |
 | D5 | Photo storage budget and alert thresholds (SRA §16 Q6) | US-00.7 thresholds | Use the ≈1.4 MB/photo data point above |
 | D7 | ~~Add a `pending_verification` asset status~~ ✅ Accepted 2026-10-14 | US-21.1 | One status on the asset, excluded from reports until a PM verifies |

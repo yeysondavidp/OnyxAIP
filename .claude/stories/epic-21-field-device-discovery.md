@@ -68,7 +68,7 @@ Larastan + Pest green.
 **So that** I only check and correct, instead of typing long serials and MACs on a phone.
 
 **Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** ⏸
-Needs ADR-003 accepted (D8 decided 2026-10-14: label crops only, metadata stripped — ADR-003 §6)
+Needs US-18.3 (gateway). ADR-003 accepted and D8 decided 2026-10-14 (ADR-003 §6)
 
 ### Acceptance criteria
 - **Given** a label photo in the US-21.1 form, **when** the technician taps "Read label", **then**
