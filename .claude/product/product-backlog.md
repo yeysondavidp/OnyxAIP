@@ -208,7 +208,7 @@ Alpine-first per ADR-001. Each screen is a story.
 |----|-------|--------|
 | US-18.1 | Report context assembly from a validated job | ⏸ Blocked |
 | US-18.2 | Deterministic report document renderer (docx + PDF) | 📋 Ready |
-| US-18.3 | AI narrative generation gateway (provider-agnostic) | 📋 Ready |
+| US-18.3 | AI narrative generation gateway (provider-agnostic) | ✅ Done |
 | US-18.4 | Structured prompt builder + section-mapped output parser | ⏸ Blocked |
 | US-18.5 | Fabrication guardrail: cross-check AI output vs. source context | ⏸ Blocked |
 | US-18.6 | PM draft, review and finalise workflow | ⏸ Blocked |

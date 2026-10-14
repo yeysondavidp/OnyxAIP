@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Ai\AiManager;
 use App\Contracts\PublicHolidayProvider;
 use App\Models\PersonalAccessToken;
 use App\Services\Sla\StaticAuPublicHolidayProvider;
@@ -19,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Config-only swap for a licensed holiday data source later (US-12.2).
         $this->app->bind(PublicHolidayProvider::class, StaticAuPublicHolidayProvider::class);
+
+        // One AI manager per app so drivers (and test fakes via extend()) are shared (ADR-003).
+        $this->app->singleton(AiManager::class);
     }
 
     public function boot(): void

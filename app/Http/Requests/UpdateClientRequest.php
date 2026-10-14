@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AiMode;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,6 +27,7 @@ class UpdateClientRequest extends FormRequest
             'notes'           => ['nullable', 'string', 'max:5000'],
             // Allow keeping an already-assigned profile even if it has since been
             // deactivated — only *new* assignments must be to an active profile.
+            'ai_mode'        => ['sometimes', Rule::enum(AiMode::class)],
             'sla_profile_id' => ['nullable', Rule::exists('sla_profiles', 'id')->where(
                 fn ($q) => $q->where('is_active', true)->when(
                     $currentProfileId,
