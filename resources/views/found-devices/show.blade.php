@@ -36,8 +36,19 @@
             <p style="font-size: var(--fs-13); color: var(--text-secondary); margin-top: var(--space-3);">
                 Technician entered: {{ $device->manufacturer }} {{ $device->model }}
                 @if ($device->serial_number) · serial {{ $device->serial_number }} @endif
-                @foreach ($found as $key => $item) · {{ str_replace('_', ' ', $key) }} {{ $item }} @endforeach
+                @foreach (\Illuminate\Support\Arr::except($found, 'ai_read') as $key => $item) · {{ str_replace('_', ' ', $key) }} {{ $item }} @endforeach
             </p>
+            @if (! empty($found['ai_read']['fields']))
+                <p style="font-size: var(--fs-13); margin-top: var(--space-2);">
+                    <x-onyx.badge tone="accent" variant="soft">Read from photo by AI</x-onyx.badge>
+                    {{ implode(', ', array_map(fn ($f) => str_replace('_', ' ', $f), $found['ai_read']['fields'])) }}
+                    @if (! empty($found['ai_read']['changed']))
+                        — the technician changed {{ implode(', ', array_map(fn ($f) => str_replace('_', ' ', $f), $found['ai_read']['changed'])) }}
+                    @else
+                        — confirmed by the technician without changes
+                    @endif
+                </p>
+            @endif
         </x-onyx.card>
 
         {{-- Verify --}}

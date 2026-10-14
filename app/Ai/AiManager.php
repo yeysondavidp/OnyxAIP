@@ -40,7 +40,9 @@ class AiManager extends Manager
             ],
         );
 
-        return new AnthropicDriver($client, (string) $config['model'], (string) $config['effort']);
+        $workspace = (string) ($config['workspace_id'] ?? '');
+
+        return new AnthropicDriver($client, (string) $config['model'], (string) $config['effort'], $workspace !== '' ? $workspace : null);
     }
 
     public function createOpenaiCompatibleDriver(): AiClient

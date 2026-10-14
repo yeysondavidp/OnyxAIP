@@ -270,6 +270,9 @@ Route::middleware(['signed', 'throttle:guest.job'])->group(function () {
     Route::post('/job/{job}/devices', [JobFlowController::class, 'storeFoundDevice'])
         ->middleware('throttle:photo.upload')
         ->name('technician.job.devices.store');
+    Route::post('/job/{job}/devices/read-label', [JobFlowController::class, 'readLabel'])
+        ->middleware('throttle:photo.upload')
+        ->name('technician.job.devices.read-label');
     Route::post('/job/{job}/devices/{asset}/link', [JobFlowController::class, 'linkExistingDevice'])
         ->name('technician.job.devices.link');
 

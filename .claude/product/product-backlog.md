@@ -252,7 +252,7 @@ Alpine-first per ADR-001. Each screen is a story.
 | ID | Story | Status |
 |----|-------|--------|
 | US-21.1 | Technician registers a device found on site (pending verification) | ✅ Done |
-| US-21.2 | Read the label photo and pre-fill the device (AI, technician confirms) | 📋 Ready (gateway in place) |
+| US-21.2 | Read the label photo and pre-fill the device (AI, technician confirms) | ✅ Done (0 wrong values in 3 runs on Miranda labels) |
 | US-21.3 | PM verification queue for devices found in the field | ✅ Done |
 
 ---

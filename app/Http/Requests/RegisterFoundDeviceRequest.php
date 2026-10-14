@@ -33,6 +33,8 @@ class RegisterFoundDeviceRequest extends FormRequest
             'orientation'        => ['nullable', Rule::enum(Orientation::class)],
             'photo'              => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480'],
             'confirm_new'        => ['sometimes', 'boolean'],
+            // Token for the label read this server stored (US-21.2) — provenance, never values.
+            'ai_token' => ['nullable', 'string', 'alpha_num', 'size:40'],
         ];
     }
 
