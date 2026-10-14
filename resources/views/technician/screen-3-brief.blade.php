@@ -5,6 +5,8 @@
         $afterPhotosUrl  = $urlService->resignFromRequest(request(), 'technician.job.after-photos', ['job' => $jobModel->id]);
         $assetStatusBase = $urlService->resignFromRequest(request(), 'technician.job.asset-status', ['job' => $jobModel->id, 'asset' => '__ASSET_ID__']);
         $foundDeviceUrl  = $urlService->resignFromRequest(request(), 'technician.job.devices.store', ['job' => $jobModel->id]);
+        $readLabelUrl    = $urlService->resignFromRequest(request(), 'technician.job.devices.read-label', ['job' => $jobModel->id]);
+        $canReadLabels   = \App\Ai\LabelReader::availableFor($jobModel->client);
         $foundDevices    = \App\Models\Asset::pendingDevices()->where('found_on_job_id', $jobModel->id)->latest()->get();
         $duplicate       = session('possible_duplicate');
         $csrfToken       = csrf_token();
@@ -87,6 +89,29 @@
                 <button type="button" x-show="! adding" @click="adding = true" class="tech-status-chip" style="width: 100%; min-height: 44px;">+ Add a device I found</button>
 
                 <form x-show="adding" x-cloak method="POST" action="{{ $foundDeviceUrl }}" enctype="multipart/form-data"
+                    x-data="{
+                        type: '{{ old('asset_type') }}', labelOnly: false, reading: false, readError: null, readFields: [],
+                        readLabel() {
+                            const photo = $refs.labelPhoto.files[0];
+                            if (! photo) { this.readError = 'Take a close-up of the label first.'; return; }
+                            this.reading = true; this.readError = null;
+                            const body = new FormData();
+                            body.append('label_photo', photo);
+                            body.append('asset_type', this.type);
+                            body.append('confirm_label_only', this.labelOnly ? '1' : '0');
+                            fetch('{{ $readLabelUrl }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }, body })
+                                .then(r => r.json().then(d => ({ ok: r.ok, d })))
+                                .then(({ ok, d }) => {
+                                    if (! ok) { this.readError = d.error || d.message || 'The label could not be read. Please type the details.'; return; }
+                                    this.readFields = Object.keys(d.fields);
+                                    for (const [field, value] of Object.entries(d.fields)) { $root.querySelector('[name=' + field + ']').value = value; }
+                                    $refs.aiToken.value = d.token;
+                                    if (this.readFields.length === 0) { this.readError = 'Nothing could be read clearly. Please type the details.'; }
+                                })
+                                .catch(() => { this.readError = 'The label could not be read. Please type the details.'; })
+                                .finally(() => { this.reading = false; });
+                        },
+                    }"
                     style="display: flex; flex-direction: column; gap: var(--space-3); background: var(--surface-primary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4);">
                     @csrf
 
@@ -109,8 +134,26 @@
                     </label>
                     @error('photo')<span role="alert" style="color: var(--critical); font-size: var(--fs-12);">{{ $message }}</span>@enderror
 
+                    @if ($canReadLabels)
+                        {{-- Label reading (US-21.2): only a close-up of the label is sent, never for network devices (ADR-003 §6) --}}
+                        <div x-show="type !== 'infrastructure'" style="border: 1px dashed var(--border-default); border-radius: var(--radius-md); padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
+                            <label class="tech-field">Close-up of the label (optional — fills in the details for you)
+                                <input type="file" x-ref="labelPhoto" accept="image/*" capture="environment" style="min-height: 44px;">
+                            </label>
+                            <label style="display: flex; gap: var(--space-2); align-items: center; min-height: 44px; font-size: var(--fs-13);">
+                                <input type="checkbox" x-model="labelOnly" style="width: 20px; height: 20px;"> The close-up shows only the label — no people
+                            </label>
+                            <button type="button" class="tech-status-chip" style="min-height: 44px;" :disabled="reading || ! labelOnly" @click="readLabel()">
+                                <span x-text="reading ? 'Reading the label…' : 'Read label'">Read label</span>
+                            </button>
+                            <p x-show="readError" x-text="readError" role="alert" style="font-size: var(--fs-12); color: #854d0e;"></p>
+                            <p x-show="readFields.length" role="status" style="font-size: var(--fs-12); color: var(--text-secondary);">Read from the photo — please check the highlighted fields.</p>
+                        </div>
+                    @endif
+                    <input type="hidden" name="ai_token" x-ref="aiToken" value="">
+
                     <label class="tech-field">What is it? *
-                        <select name="asset_type" required style="min-height: 44px; width: 100%;">
+                        <select name="asset_type" x-model="type" required style="min-height: 44px; width: 100%;">
                             <option value="">Choose…</option>
                             @foreach (\App\Enums\AssetType::cases() as $t)
                                 <option value="{{ $t->value }}" @selected(old('asset_type') === $t->value)>{{ $t->label() }}</option>
@@ -123,16 +166,16 @@
                         <input type="text" name="location_notes" maxlength="500" value="{{ old('location_notes') }}" placeholder="e.g. Front window, left" style="min-height: 44px; width: 100%;">
                     </label>
                     <label class="tech-field">Brand / manufacturer
-                        <input type="text" name="manufacturer" maxlength="255" value="{{ old('manufacturer') }}" style="min-height: 44px; width: 100%;">
+                        <input type="text" name="manufacturer" :style="readFields.includes('manufacturer') ? { outline: '2px solid var(--bronze-500)' } : {}\" maxlength="255" value="{{ old('manufacturer') }}" style="min-height: 44px; width: 100%;">
                     </label>
                     <label class="tech-field">Model
-                        <input type="text" name="model" maxlength="255" value="{{ old('model') }}" style="min-height: 44px; width: 100%;">
+                        <input type="text" name="model" :style="readFields.includes('model') ? { outline: '2px solid var(--bronze-500)' } : {}\" maxlength="255" value="{{ old('model') }}" style="min-height: 44px; width: 100%;">
                     </label>
                     <label class="tech-field">Serial number
-                        <input type="text" name="serial_number" maxlength="100" value="{{ old('serial_number') }}" autocapitalize="characters" style="min-height: 44px; width: 100%;">
+                        <input type="text" name="serial_number" :style="readFields.includes('serial_number') ? { outline: '2px solid var(--bronze-500)' } : {}\" maxlength="100" value="{{ old('serial_number') }}" autocapitalize="characters" style="min-height: 44px; width: 100%;">
                     </label>
                     <label class="tech-field">MAC address (players)
-                        <input type="text" name="mac_address" value="{{ old('mac_address') }}" placeholder="00:CE:39:D8:2A:51" autocapitalize="characters" style="min-height: 44px; width: 100%;">
+                        <input type="text" name="mac_address" :style="readFields.includes('mac_address') ? { outline: '2px solid var(--bronze-500)' } : {}\" value="{{ old('mac_address') }}" placeholder="00:CE:39:D8:2A:51" autocapitalize="characters" style="min-height: 44px; width: 100%;">
                     </label>
                     @error('mac_address')<span role="alert" style="color: var(--critical); font-size: var(--fs-12);">{{ $message }}</span>@enderror
                     <label class="tech-field">Screen size in inches (screens)

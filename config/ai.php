@@ -20,6 +20,8 @@ return [
             'api_key' => env('ANTHROPIC_API_KEY'),
             'model'   => env('AI_MODEL', 'claude-haiku-5-5'),
             'effort'  => env('AI_EFFORT', 'low'),
+            // Only for an organisation-level key; a workspace-scoped key doesn't need it.
+            'workspace_id' => env('ANTHROPIC_WORKSPACE_ID'),
         ],
 
         // Paid OpenAI or a self-hosted Ollama (base URL e.g. http://ollama.internal:11434/v1).

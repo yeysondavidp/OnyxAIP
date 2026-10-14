@@ -67,8 +67,8 @@ Larastan + Pest green.
 **I want** to photograph a device's label and have the fields filled in for me
 **So that** I only check and correct, instead of typing long serials and MACs on a phone.
 
-**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** 📋
-Ready — gateway in place (US-18.3); ADR-003 accepted and D8 decided 2026-10-14 (ADR-003 §6)
+**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** 🚧
+Code done; switch on for technicians only after `ai:label-accuracy` on the Miranda label crops
 
 ### Acceptance criteria
 - **Given** a label photo in the US-21.1 form, **when** the technician taps "Read label", **then**

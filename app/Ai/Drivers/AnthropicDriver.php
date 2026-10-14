@@ -20,6 +20,8 @@ final class AnthropicDriver implements AiClient
         private readonly Client $client,
         private readonly string $model,
         private readonly string $effort,
+        // Required when the API key is organisation-level rather than workspace-scoped.
+        private readonly ?string $workspaceId = null,
     ) {}
 
     public function complete(AiRequest $request): AiResponse
@@ -42,6 +44,7 @@ final class AnthropicDriver implements AiClient
                 model: $this->model,
                 outputConfig: $outputConfig,
                 system: $request->system,
+                workspaceID: $this->workspaceId,
             );
         } catch (AnthropicException|ClientExceptionInterface $e) {
             throw AiUnavailableException::providerFailed($e);

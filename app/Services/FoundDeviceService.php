@@ -90,8 +90,11 @@ class FoundDeviceService
             $asset->forceFill([
                 'found_on_job_id'                => $job->id,
                 'found_by_technician_profile_id' => $technician->id,
-                'discovery_data'                 => array_filter(array_intersect_key($data, array_flip(self::DISCOVERY_KEYS)), fn ($v) => $v !== null && $v !== ''),
-                'discovery_photo_path'           => $path,
+                'discovery_data'                 => array_filter(
+                    array_intersect_key($data, array_flip(self::DISCOVERY_KEYS)) + ['ai_read' => $data['ai_read'] ?? null],
+                    fn ($v) => $v !== null && $v !== ''
+                ),
+                'discovery_photo_path' => $path,
             ])->save();
 
             $job->assets()->attach($asset->id, ['status_before' => AssetStatus::PendingVerification->value]);

@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\Technician;
 
+use App\Ai\AiUnavailableException;
+use App\Ai\LabelReader;
+use App\Ai\SanitisedImage;
 use App\Enums\AssetStatus;
+use App\Enums\AssetType;
 use App\Enums\PhotoType;
 use App\Enums\PostServiceStatus;
 use App\Enums\TechnicianJobStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterFoundDeviceRequest;
 use App\Models\Asset;
+use App\Models\Client;
 use App\Models\JobAssetOutcome;
 use App\Models\JobAttachment;
 use App\Models\JobCheckpoint;
@@ -26,6 +31,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -163,7 +170,7 @@ class JobFlowController extends Controller
         }
 
         [$jobModel, $profile] = $result;
-        $jobModel->load(['store', 'assets', 'attachments']);
+        $jobModel->load(['store', 'assets', 'attachments', 'client']);
 
         return view('technician.screen-3-brief', compact('jobModel', 'profile'));
     }
@@ -227,10 +234,61 @@ class JobFlowController extends Controller
             ]);
         }
 
+        $validated['ai_read'] = LabelReader::provenance($validated['ai_token'] ?? null, $validated);
+
         $asset = $devices->register($jobModel, $profile, $validated, $request->file('photo'));
 
         return redirect()->to($briefUrl.'#found-devices')
             ->with('found_device_added', "Saved as {$asset->asset_code}. A project manager will check it.");
+    }
+
+    /**
+     * Read a label close-up and suggest form values (US-21.2). JSON for the Screen 3 form; any
+     * failure leaves the form for manual entry. Router/network labels are never sent (they print
+     * passwords), and the technician must confirm the close-up shows only the label (D8).
+     */
+    public function readLabel(Request $request, string $job, LabelReader $reader): JsonResponse
+    {
+        $result = $this->resolveIdentity($request, $job);
+        if ($this->isExpiredRedirect($result)) {
+            return response()->json(['error' => 'This link has expired.'], 403);
+        }
+
+        [$jobModel] = $result;
+
+        // Always JSON (the Screen 3 fetch reads it): app-wide JSON errors only cover api/* and /mcp.
+        $validator = Validator::make($request->all(), [
+            'label_photo'        => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480'],
+            'asset_type'         => ['nullable', Rule::enum(AssetType::class)],
+            'confirm_label_only' => ['accepted'],
+        ], [
+            'label_photo.required'        => 'Take a close-up of the label first.',
+            'confirm_label_only.accepted' => 'Confirm the photo shows only the label and no people.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
+
+        $validated = $validator->validated();
+
+        if (($validated['asset_type'] ?? null) === AssetType::Infrastructure->value) {
+            return response()->json(['error' => 'Router and network labels print passwords. Please type the details by hand.'], 422);
+        }
+
+        $client = Client::findOrFail($jobModel->client_id);
+
+        if (! LabelReader::availableFor($client)) {
+            return response()->json(['error' => 'Label reading is not switched on for this client. Please type the details.'], 422);
+        }
+
+        try {
+            $read = $reader->read($client, SanitisedImage::fromFile($request->file('label_photo')->getRealPath()));
+        } catch (AiUnavailableException|\InvalidArgumentException $e) {
+            return response()->json(['error' => $e instanceof AiUnavailableException ? $e->getMessage() : 'That photo could not be read. Please type the details.'], 422);
+        }
+
+        return response()->json($read);
     }
 
     /** The "found" device is one already registered at this store: add it to the job instead. */

@@ -60,6 +60,17 @@ it('anthropic driver sends the sanitised image, schema and effort, and reads tex
     ])->toBe(['model' => 'claude-haiku-5-5', 'image' => 'image/jpeg', 'format' => 'json_schema', 'effort' => 'low', 'serial' => 'MIB192600317', 'tokens' => [1200, 40]]);
 });
 
+it('anthropic driver names the workspace when an organisation-level key needs it', function () {
+    $history = [];
+    $stack   = HandlerStack::create(new MockHandler([new Response(200, ['Content-Type' => 'application/json'], json_encode(anthropicMessage('{"serial":"X1"}')))]));
+    $stack->push(Middleware::history($history));
+    $driver = new AnthropicDriver(new Client(apiKey: 'test-key', requestOptions: ['transporter' => new Guzzle(['handler' => $stack]), 'maxRetries' => 0]), 'claude-haiku-5-5', 'low', 'wrkspc_test');
+
+    $driver->complete(labelRequest());
+
+    expect($history[0]['request']->getHeaderLine('anthropic-workspace-id'))->toBe('wrkspc_test');
+});
+
 it('anthropic driver turns a refusal into the one AI exception', function () {
     $history = [];
 
