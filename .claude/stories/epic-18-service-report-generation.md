@@ -13,6 +13,12 @@
 > model (Ollama running Gemma or similar) are both first-class, swappable by config, never by
 > code change.
 
+> **Data rule (D8, 2026-10-14).** Report drafting may use photos of **public store areas only**
+> (shopfront, windows, sales floor), each confirmed by the PM before generation — never
+> back-of-house, non-public screen content, documents, router labels or people (ADR-003 §6).
+> Text uses codes instead of names; no addresses, contacts or secrets. Clients set to *label crops
+> only* or *off* get text-only drafting or none.
+>
 > **Exemplars (updated 2026-10-13).** A third real report — **Pandora, Westfield Miranda,
 > 12 Oct 2026** (`.claude/files/reports/Technical_Service_Report_Pandora_Miranda_12Oct2026.pdf`)
 > — changes the template assumptions for US-18.2/US-18.4:

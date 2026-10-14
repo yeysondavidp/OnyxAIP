@@ -52,7 +52,7 @@ Epics are `EPIC-<nn>`. ADRs are `ADR-<nnn>`.
 ## Current state of planning
 
 - Architecture: ADR-001 (frontend) and ADR-002 (deployment) **accepted**. ADR-003 (AI
-  narrative-generation gateway, provider-agnostic) **proposed, pending ONYX review**. ADR-004
+  gateway, provider-agnostic, with data minimisation) **accepted 2026-10-14**. ADR-004
   (agent access via an MCP endpoint) **accepted 2026-10-13**. Infra
   resolved: reuse the existing **MySQL** (dedicated DB/user) + stand up a **new project-owned,
   shareable Redis** (AOF + `noeviction`, namespaced) — ADR-002.
