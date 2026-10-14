@@ -4,6 +4,9 @@
         $urlService      = app(\App\Services\TechnicianUrlService::class);
         $afterPhotosUrl  = $urlService->resignFromRequest(request(), 'technician.job.after-photos', ['job' => $jobModel->id]);
         $assetStatusBase = $urlService->resignFromRequest(request(), 'technician.job.asset-status', ['job' => $jobModel->id, 'asset' => '__ASSET_ID__']);
+        $foundDeviceUrl  = $urlService->resignFromRequest(request(), 'technician.job.devices.store', ['job' => $jobModel->id]);
+        $foundDevices    = \App\Models\Asset::pendingDevices()->where('found_on_job_id', $jobModel->id)->latest()->get();
+        $duplicate       = session('possible_duplicate');
         $csrfToken       = csrf_token();
     @endphp
 
@@ -61,6 +64,94 @@
                 </div>
             @endif
 
+            {{-- Devices found on site (US-21.1) --}}
+            <style>
+                .tech-field { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-13); color: var(--text-secondary); }
+                /* 16px stops iOS Safari zooming into the field on focus */
+                .tech-field input, .tech-field select { border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 0 var(--space-3); font-size: 16px; background: var(--surface-primary); color: var(--text-primary); }
+            </style>
+            <div id="found-devices" x-data="{ adding: {{ $errors->any() || $duplicate ? 'true' : 'false' }} }" style="margin-bottom: var(--space-5);">
+                <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">Devices found on site</p>
+
+                @if (session('found_device_added'))
+                    <div role="status" style="background: rgba(22,163,74,.08); border: 1px solid rgba(22,163,74,.25); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); font-size: var(--fs-13);">{{ session('found_device_added') }}</div>
+                @endif
+
+                @foreach ($foundDevices as $found)
+                    <div style="display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px dashed var(--border-default); border-radius: var(--radius-md); margin-bottom: var(--space-2); font-size: var(--fs-13);">
+                        <span><strong>{{ $found->asset_name }}</strong><br><span style="font-family: monospace; color: var(--text-secondary);">{{ $found->asset_code }}</span></span>
+                        <span style="color: var(--text-secondary); white-space: nowrap;">Waiting for PM</span>
+                    </div>
+                @endforeach
+
+                <button type="button" x-show="! adding" @click="adding = true" class="tech-status-chip" style="width: 100%; min-height: 44px;">+ Add a device I found</button>
+
+                <form x-show="adding" x-cloak method="POST" action="{{ $foundDeviceUrl }}" enctype="multipart/form-data"
+                    style="display: flex; flex-direction: column; gap: var(--space-3); background: var(--surface-primary); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4);">
+                    @csrf
+
+                    @if ($duplicate)
+                        <div role="alert" style="background: rgba(234,179,8,.1); border: 1px solid rgba(234,179,8,.3); border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--fs-13); color: #854d0e;">
+                            This may already be registered as <strong>{{ $duplicate['asset_code'] }}</strong>{{ $duplicate['store_name'] ? ' at '.$duplicate['store_name'] : '' }}.
+                            @if ($duplicate['same_store'])
+                                <button type="submit" formaction="{{ $urlService->resignFromRequest(request(), 'technician.job.devices.link', ['job' => $jobModel->id, 'asset' => $duplicate['id']]) }}" formenctype="application/x-www-form-urlencoded" formnovalidate
+                                    class="tech-start-btn" style="margin-top: var(--space-2);">Yes, it's {{ $duplicate['asset_code'] }} — add it to this visit</button>
+                            @endif
+                            <label style="display: flex; gap: var(--space-2); align-items: center; margin-top: var(--space-2); min-height: 44px;">
+                                <input type="checkbox" name="confirm_new" value="1" style="width: 20px; height: 20px;"> No, it's a different device — save it as new
+                            </label>
+                            <span style="display: block; margin-top: var(--space-1);">Take the photo again before saving.</span>
+                        </div>
+                    @endif
+
+                    <label class="tech-field">Photo of the device or its label *
+                        <input type="file" name="photo" accept="image/*" capture="environment" required style="min-height: 44px;">
+                    </label>
+                    @error('photo')<span role="alert" style="color: var(--critical); font-size: var(--fs-12);">{{ $message }}</span>@enderror
+
+                    <label class="tech-field">What is it? *
+                        <select name="asset_type" required style="min-height: 44px; width: 100%;">
+                            <option value="">Choose…</option>
+                            @foreach (\App\Enums\AssetType::cases() as $t)
+                                <option value="{{ $t->value }}" @selected(old('asset_type') === $t->value)>{{ $t->label() }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    @error('asset_type')<span role="alert" style="color: var(--critical); font-size: var(--fs-12);">{{ $message }}</span>@enderror
+
+                    <label class="tech-field">Where is it?
+                        <input type="text" name="location_notes" maxlength="500" value="{{ old('location_notes') }}" placeholder="e.g. Front window, left" style="min-height: 44px; width: 100%;">
+                    </label>
+                    <label class="tech-field">Brand / manufacturer
+                        <input type="text" name="manufacturer" maxlength="255" value="{{ old('manufacturer') }}" style="min-height: 44px; width: 100%;">
+                    </label>
+                    <label class="tech-field">Model
+                        <input type="text" name="model" maxlength="255" value="{{ old('model') }}" style="min-height: 44px; width: 100%;">
+                    </label>
+                    <label class="tech-field">Serial number
+                        <input type="text" name="serial_number" maxlength="100" value="{{ old('serial_number') }}" autocapitalize="characters" style="min-height: 44px; width: 100%;">
+                    </label>
+                    <label class="tech-field">MAC address (players)
+                        <input type="text" name="mac_address" value="{{ old('mac_address') }}" placeholder="00:CE:39:D8:2A:51" autocapitalize="characters" style="min-height: 44px; width: 100%;">
+                    </label>
+                    @error('mac_address')<span role="alert" style="color: var(--critical); font-size: var(--fs-12);">{{ $message }}</span>@enderror
+                    <label class="tech-field">Screen size in inches (screens)
+                        <input type="number" name="screen_size_inches" step="0.1" min="1" value="{{ old('screen_size_inches') }}" inputmode="decimal" style="min-height: 44px; width: 100%;">
+                    </label>
+                    <label class="tech-field">Orientation (screens)
+                        <select name="orientation" style="min-height: 44px; width: 100%;">
+                            <option value="">—</option>
+                            @foreach (\App\Enums\Orientation::cases() as $o)
+                                <option value="{{ $o->value }}" @selected(old('orientation') === $o->value)>{{ ucfirst($o->value) }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <p style="font-size: var(--fs-12); color: var(--text-secondary);">Fill in what you can read. A project manager checks everything before it goes into the register.</p>
+                    <button type="submit" class="tech-start-btn">Save device</button>
+                    <button type="button" @click="adding = false" class="tech-status-chip" style="min-height: 44px;">Cancel</button>
+                </form>
+            </div>
+
             {{-- Asset panel --}}
             @if ($jobModel->assets->isNotEmpty())
                 <div>
@@ -92,7 +183,7 @@
                                 {{-- In-flow status update --}}
                                 <p style="font-size: var(--fs-12); color: var(--text-secondary); margin-bottom: var(--space-2);">Update status (optional)</p>
                                 <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
-                                    @foreach (\App\Enums\AssetStatus::cases() as $s)
+                                    @foreach (\App\Enums\AssetStatus::selectable() as $s)
                                         @if ($s !== \App\Enums\AssetStatus::UnderMaintenance)
                                             <button type="button"
                                                 @click="

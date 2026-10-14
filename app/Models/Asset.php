@@ -4,10 +4,12 @@ namespace App\Models;
 
 use App\Enums\AssetStatus;
 use App\Enums\AssetType;
+use App\Scopes\VerifiedAssetScope;
 use App\Services\QrCodeService;
 use App\Traits\Auditable;
 use App\Traits\ClientScoped;
 use Database\Factories\AssetFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -58,6 +60,8 @@ class Asset extends BaseModel
             'purchase_date'   => 'date',
             'warranty_expiry' => 'date',
             'install_date'    => 'date',
+            'discovery_data'  => 'array',
+            'verified_at'     => 'datetime',
         ];
     }
 
@@ -126,6 +130,9 @@ class Asset extends BaseModel
 
     protected static function booted(): void
     {
+        // Devices found on site stay out of every query until a PM verifies them (EPIC-21).
+        static::addGlobalScope(new VerifiedAssetScope);
+
         // Generate QR code after the asset record is first persisted (US-07.1).
         // Runs outside the main createWithDetail() transaction — failure is non-fatal;
         // the QR can be regenerated on demand via QrCodeService::generateForAsset().
@@ -136,6 +143,32 @@ class Asset extends BaseModel
                 // Non-fatal — asset is usable without the QR image.
             }
         });
+    }
+
+    // ── Field discovery (EPIC-21) ──────────────────────────────────────────────
+
+    /**
+     * Devices found on site awaiting PM verification — the only way to see them.
+     *
+     * @return Builder<static>
+     */
+    public static function pendingDevices(): Builder
+    {
+        return static::query()
+            ->withoutGlobalScope(VerifiedAssetScope::class)
+            ->where('asset_status', AssetStatus::PendingVerification->value);
+    }
+
+    /** @return BelongsTo<ServiceJob, $this> */
+    public function foundOnJob(): BelongsTo
+    {
+        return $this->belongsTo(ServiceJob::class, 'found_on_job_id');
+    }
+
+    /** @return BelongsTo<TechnicianProfile, $this> */
+    public function foundBy(): BelongsTo
+    {
+        return $this->belongsTo(TechnicianProfile::class, 'found_by_technician_profile_id');
     }
 
     // ── Detail helpers ─────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DisplayGroupController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\FoundDeviceController;
 use App\Http\Controllers\LabelSheetController;
 use App\Http\Controllers\Reports\AssetRegisterReportController;
 use App\Http\Controllers\Reports\DisplayGroupTopologyReportController;
@@ -180,6 +181,14 @@ Route::middleware(['auth', 'role:pm'])->group(function () {
     Route::patch('/settings/email-templates/{slot}', [EmailTemplateController::class, 'update'])->name('email-templates.update');
     Route::get('/settings/email-templates/{slot}/preview', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
 
+    // Devices found on site awaiting PM verification (US-21.3)
+    Route::get('/devices-to-verify', [FoundDeviceController::class, 'index'])->name('found-devices.index');
+    Route::get('/devices-to-verify/{device}', [FoundDeviceController::class, 'show'])->name('found-devices.show');
+    Route::get('/devices-to-verify/{device}/photo', [FoundDeviceController::class, 'photo'])->name('found-devices.photo');
+    Route::put('/devices-to-verify/{device}', [FoundDeviceController::class, 'verify'])->name('found-devices.verify');
+    Route::post('/devices-to-verify/{device}/reject', [FoundDeviceController::class, 'reject'])->name('found-devices.reject');
+    Route::post('/devices-to-verify/{device}/merge', [FoundDeviceController::class, 'merge'])->name('found-devices.merge');
+
     // Agent access — service accounts + Sanctum tokens for MCP (US-20.1, ADR-004)
     Route::get('/settings/agents', [AgentAccessController::class, 'index'])->name('agents.index');
     Route::get('/settings/agents/create', [AgentAccessController::class, 'create'])->name('agents.create');
@@ -256,6 +265,13 @@ Route::middleware(['signed', 'throttle:guest.job'])->group(function () {
     // In-flow asset status update (Screen 3, rate-limited via throttle:guest.job)
     Route::post('/job/{job}/assets/{asset}/status', [JobFlowController::class, 'updateAssetStatus'])
         ->name('technician.job.asset-status');
+
+    // Devices found on site (Screen 3, US-21.1) — the photo upload shares the photo limiter
+    Route::post('/job/{job}/devices', [JobFlowController::class, 'storeFoundDevice'])
+        ->middleware('throttle:photo.upload')
+        ->name('technician.job.devices.store');
+    Route::post('/job/{job}/devices/{asset}/link', [JobFlowController::class, 'linkExistingDevice'])
+        ->name('technician.job.devices.link');
 
     // PM attachment view — signed-URL scoped, so the technician can review
     // reference photos/briefs without needing a PM-authenticated session

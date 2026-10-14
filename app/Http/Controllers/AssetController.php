@@ -189,7 +189,7 @@ class AssetController extends Controller
         return [
             'clients'                  => $clients,
             'assetTypes'               => AssetType::cases(),
-            'assetStatuses'            => AssetStatus::cases(),
+            'assetStatuses'            => AssetStatus::selectable(),
             'orientations'             => Orientation::cases(),
             'totemSuppliedByOptions'   => TotemSuppliedBy::cases(),
             'playerTypes'              => PlayerType::cases(),

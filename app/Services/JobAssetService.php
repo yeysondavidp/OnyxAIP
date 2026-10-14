@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\AssetStatus;
 use App\Models\Asset;
 use App\Models\ServiceJob;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Affected assets on a service job (US-08.2) — shared by the job form and the
@@ -29,8 +30,16 @@ class JobAssetService
     {
         $existingStatusBefore = $job->assets()->pluck('job_assets.status_before', 'assets.id')->toArray();
 
+        // Devices found on site are hidden from the job form until verified (EPIC-21) — keep
+        // them attached instead of letting a form save detach them.
+        $pendingSync = Asset::pendingDevices()
+            ->whereIn('id', DB::table('job_assets')->where('job_id', $job->id)->pluck('asset_id'))
+            ->pluck('id')
+            ->mapWithKeys(fn ($id) => [(int) $id => ['status_before' => AssetStatus::PendingVerification->value]])
+            ->all();
+
         if (empty($assetIds)) {
-            $job->assets()->sync([]);
+            $job->assets()->sync($pendingSync);
 
             return;
         }
@@ -44,7 +53,7 @@ class JobAssetService
             ];
         }
 
-        $job->assets()->sync($syncData);
+        $job->assets()->sync($syncData + $pendingSync);
 
         $assets
             ->filter(fn (Asset $a) => in_array($a->asset_status, [AssetStatus::Active, AssetStatus::Faulty], strict: true))

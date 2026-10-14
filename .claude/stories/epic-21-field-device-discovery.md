@@ -25,7 +25,7 @@ Sprint: proposed for 16 (see `sprints/sprint-plan.md`).
 **So that** it is recorded while I am in front of it, instead of someone re-typing it from photos
 later.
 
-**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-04.1, US-10.3 · **Status:** 📋 Ready
+**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-04.1, US-10.3 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** the technician brief (Screen 3), **when** they tap "Add a device I found", **then** a
@@ -67,8 +67,8 @@ Larastan + Pest green.
 **I want** to photograph a device's label and have the fields filled in for me
 **So that** I only check and correct, instead of typing long serials and MACs on a phone.
 
-**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** ⏸
-Needs US-18.3 (gateway). ADR-003 accepted and D8 decided 2026-10-14 (ADR-003 §6)
+**Estimate:** 8 · **Priority:** P1 · **Depends on:** US-21.1, US-18.3 (AI gateway) · **Status:** 📋
+Ready — gateway in place (US-18.3); ADR-003 accepted and D8 decided 2026-10-14 (ADR-003 §6)
 
 ### Acceptance criteria
 - **Given** a label photo in the US-21.1 form, **when** the technician taps "Read label", **then**
@@ -114,7 +114,7 @@ Larastan + Pest green.
 **I want** one list of devices technicians (or agents) added, with the photo next to the fields
 **So that** I verify each one once before it becomes part of the register.
 
-**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-21.1 · **Status:** 📋 Ready
+**Estimate:** 5 · **Priority:** P1 · **Depends on:** US-21.1 · **Status:** ✅ Done
 
 ### Acceptance criteria
 - **Given** pending devices exist, **then** the PM dashboard shows a "Devices to verify" count and a

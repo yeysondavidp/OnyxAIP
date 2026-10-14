@@ -41,6 +41,8 @@ class AssetTransitionService
         // ("Still Faulty" outcome, SRA §6 Screen 4) — the asset stays Faulty, not Active.
         'under_maintenance' => ['active', 'faulty', 'decommissioned'],
         'decommissioned'    => [],
+        // EPIC-21: a PM verifying a device found on site gives it its real status.
+        'pending_verification' => ['active', 'faulty', 'offline', 'decommissioned'],
     ];
 
     /**

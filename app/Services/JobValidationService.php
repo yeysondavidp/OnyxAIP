@@ -54,6 +54,14 @@ class JobValidationService
 
         $this->assertSameClientScope($job);
 
+        // Devices found on this visit must be verified first — they are not in the register yet.
+        $pending = Asset::pendingDevices()->where('found_on_job_id', $job->id)->count();
+        if ($pending > 0) {
+            throw new \InvalidArgumentException(
+                "Verify the {$pending} device(s) found on this visit before validating the job."
+            );
+        }
+
         $outcomesByAsset = JobAssetOutcome::where('job_id', $job->id)->get()->keyBy('asset_id');
 
         // Resolve every asset's target status up front so an illegal transition
