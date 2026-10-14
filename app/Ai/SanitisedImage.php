@@ -17,8 +17,10 @@ final readonly class SanitisedImage
     /** @throws \InvalidArgumentException when the file is not a readable image */
     public static function fromFile(string $path, int $maxEdge = self::MAX_EDGE): self
     {
-        $raw   = is_file($path) ? file_get_contents($path) : false;
-        $image = $raw === false ? false : imagecreatefromstring($raw);
+        $raw = is_file($path) ? file_get_contents($path) : false;
+
+        // Check the format first: GD warns on unknown data instead of just returning false.
+        $image = $raw === false || getimagesizefromstring($raw) === false ? false : imagecreatefromstring($raw);
 
         if ($image === false) {
             throw new \InvalidArgumentException('Not a readable image.');
