@@ -87,6 +87,17 @@
                         @endforeach
                     </x-onyx.select>
 
+                    <x-onyx.select
+                        name="ai_mode"
+                        label="AI assistance"
+                        :error="$errors->first('ai_mode')"
+                        helper="What may be sent to the AI service. Never back-of-house, router labels, people or confidential content (ADR-003)."
+                    >
+                        @foreach (\App\Enums\AiMode::cases() as $mode)
+                            <option value="{{ $mode->value }}" @selected(old('ai_mode', $client->ai_mode->value) === $mode->value)>{{ $mode->label() }}</option>
+                        @endforeach
+                    </x-onyx.select>
+
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-8);">

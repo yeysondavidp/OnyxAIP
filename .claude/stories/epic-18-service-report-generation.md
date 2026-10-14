@@ -142,7 +142,14 @@ two concrete implementations — one OpenAI-compatible HTTP driver (serving both
 **self-hosted** Ollama/Gemma) and one Anthropic driver
 **So that** switching AI provider is a configuration change, never a code change, per ADR-003.
 
-**Estimate:** 8 · **Priority:** P2 · **Depends on:** — (self-contained) · **Status:** 📋 Ready
+**Estimate:** 8 · **Priority:** P2 · **Depends on:** — (self-contained) · **Status:** ✅ Done
+
+> **Built one layer lower than first written (2026-10-14):** the contract is a generic
+> `App\Contracts\AiClient::complete(AiRequest): AiResponse` (text + sanitised images + optional
+> JSON schema) behind `App\Ai\AiGateway`, so both the report narrative (US-18.4, which wraps it as
+> `NarrativeGenerator`) and label reading (US-21.2) share one gateway, one data filter
+> (ADR-003 §6) and one audit. Drivers: Anthropic (official SDK, Claude Haiku 5.5), OpenAI-compatible
+> (OpenAI or Ollama — `image_url` string form and JSON mode are config), disabled (default), fake.
 
 ### Acceptance criteria
 - **Given** `config('ai.default')` (env `AI_PROVIDER`), **when** the app requests a narrative
