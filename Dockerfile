@@ -19,7 +19,9 @@ RUN npm run build
 # ============================================================
 # Stage 2 — PHP-FPM runtime (nginx proxy sits in front)
 # ============================================================
-FROM php:8.4-fpm-alpine AS runtime
+# Patch-pinned: 8.4.27 fixes CVE-2026-109618/-109619 ("PHP2shell", FPM RCE via session upload progress).
+# Bump deliberately; CI also pulls the base so a rebuild never reuses a stale cached layer.
+FROM php:8.4.27-fpm-alpine AS runtime
 
 # ---- system deps + PHP extensions -------------------------
 RUN apk add --no-cache \

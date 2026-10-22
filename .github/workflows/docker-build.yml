@@ -36,6 +36,7 @@ jobs:
           file: Dockerfile
           target: runtime
           platforms: linux/amd64
+          pull: true
           push: true
           provenance: false
           tags: ghcr.io/yeysondavidp/onyx-aip-app:latest
